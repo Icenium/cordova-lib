@@ -46,26 +46,26 @@ module.exports = function fetchPlugin(plugin_src, plugins_dir, options) {
     if ( uri.protocol && uri.protocol != 'file:' && uri.protocol != 'c:' && !plugin_src.match(/^\w+:\\/)) {
         events.emit('log', 'Fetching plugin "' + plugin_src + '" via git clone');
         if (options.link) {
-            return Q.reject(new CordovaError('--link is not supported for git URLs'));
-        } else {
-            var data = {
-                source: {
-                    type: 'git',
-                    url:  plugin_src,
-                    subdir: options.subdir,
-                    ref: options.git_ref
-                }
-            };
-
-            return plugins.clonePluginGit(plugin_src, plugins_dir, options)
-            .then(function(dir) {
-                return checkID(options.expected_id, dir);
-            })
-            .then(function(dir) {
-                metadata.save_fetch_metadata(dir, data);
-                return dir;
-            });
+            events.emit('log', '--link is not supported for git URLs and will be ignored');
         }
+
+        var data = {
+            source: {
+                type: 'git',
+                url:  plugin_src,
+                subdir: options.subdir,
+                ref: options.git_ref
+            }
+        };
+
+        return plugins.clonePluginGit(plugin_src, plugins_dir, options)
+        .then(function(dir) {
+            return checkID(options.expected_id, dir);
+        })
+        .then(function(dir) {
+            metadata.save_fetch_metadata(dir, data);
+            return dir;
+        });
     } else {
         // If it's not a network URL, it's either a local path or a plugin ID.
 
