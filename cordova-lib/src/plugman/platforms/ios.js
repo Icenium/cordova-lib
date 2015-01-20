@@ -24,7 +24,10 @@ var path = require('path')
   , plist = require('plist-with-patches')
   , shell = require('shelljs')
   , events = require('../events')
-  , cachedProjectFiles = {};
+  , _ = require('underscore')
+  , CordovaError = require('../../CordovaError')
+  , cachedProjectFiles = {}
+  ;
 
 module.exports = {
     www_dir:function(project_dir) {
@@ -167,23 +170,17 @@ module.exports = {
         var xcodeproj = xcode.project(pbxPath);
         xcodeproj.parseSync();
 
-        // grab and parse plist file or config.xml
-        var config_files = (glob.sync(path.join(project_dir, '**', '{PhoneGap,Cordova}.plist')).length == 0 ?
-                            glob.sync(path.join(project_dir, '**', 'config.xml')) :
-                            glob.sync(path.join(project_dir, '**', '{PhoneGap,Cordova}.plist'))
-                           );
 
-        config_files = config_files.filter(function (val) {
-            return !(/^build\//.test(val)) && !(/\/www\/config.xml$/.test(val));
-        });
+        var xcBuildConfiguration = xcodeproj.pbxXCBuildConfigurationSection();
+        var plist_file_entry = _.find(xcBuildConfiguration, function (entry) { return entry.buildSettings && entry.buildSettings.INFOPLIST_FILE; });
+        var plist_file = path.join(project_dir, plist_file_entry.buildSettings.INFOPLIST_FILE.replace(/^"(.*)"$/g, '$1'));
+        var config_file = path.join(path.dirname(plist_file), 'config.xml');
 
-        if (config_files.length === 0) {
-            throw new Error("could not find PhoneGap/Cordova plist file, or config.xml file.");
+        if (!fs.existsSync(plist_file) || !fs.existsSync(config_file)) {
+            throw new CordovaError('could not find -Info.plist file, or config.xml file.');
         }
 
-        var config_file = config_files[0];
-        var config_filename = path.basename(config_file);
-        var xcode_dir = path.dirname(config_file);
+        var xcode_dir = path.dirname(plist_file);
         var pluginsDir = path.resolve(xcode_dir, 'Plugins');
         var resourcesDir = path.resolve(xcode_dir, 'Resources');
 
