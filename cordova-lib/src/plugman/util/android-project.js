@@ -126,7 +126,7 @@ AndroidProject.prototype = {
         // Starting with 3.6.0, the build scripts set ANDROID_HOME, so there is
         // no reason to keep run this command. Plus - we really want to avoid
         // relying on the presense of native SDKs within plugman.
-        if (this.needsSubLibraryUpdate) {
+        if (true || this.needsSubLibraryUpdate) {
             for (var sub_dir in this._subProjectDirs)
             {
                 shell.exec('android update lib-project --path "' + sub_dir + '"');
