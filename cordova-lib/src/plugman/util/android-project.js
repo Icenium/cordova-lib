@@ -29,9 +29,15 @@ var fs = require('fs'),
 
 
 function addToPropertyList(projectProperties, key, value) {
-    var i = 1;
-    while (projectProperties.get(key + '.' + i))
+    var i = 1,
+        curValue;
+
+    while (curValue = projectProperties.get(key + '.' + i)) {
+        if (curValue === value) {
+            return; // already added
+        }
         i++;
+    }
 
     projectProperties.set(key + '.' + i, value);
     projectProperties.dirty = true;
@@ -54,6 +60,11 @@ function removeFromPropertyList(projectProperties, key, value) {
     projectProperties.dirty = true;
 }
 
+function getRelativeLibraryPath(parentDir, subDir) {
+    var libraryPath = path.relative(fs.realpathSync(parentDir), subDir);
+    return (path.sep == '\\') ? libraryPath.replace(/\\/g, '/') : libraryPath;
+}
+
 function AndroidProject(projectDir) {
     this._propertiesEditors = {};
     this._subProjectDirs = {};
@@ -74,27 +85,27 @@ AndroidProject.prototype = {
             subProperties.dirty = true;
             this._subProjectDirs[subDir] = true;
         }
-        addToPropertyList(parentProperties, 'android.library.reference', module.exports.getRelativeLibraryPath(parentDir, subDir));
-
+        var relativePath = getRelativeLibraryPath(parentDir, subDir);
+        addToPropertyList(parentProperties, 'android.library.reference', relativePath);
         this._dirty = true;
     },
     removeSubProject: function(parentDir, subDir) {
         var parentProjectFile = path.resolve(parentDir, 'project.properties');
         var parentProperties = this._getPropertiesFile(parentProjectFile);
-        removeFromPropertyList(parentProperties, 'android.library.reference', module.exports.getRelativeLibraryPath(parentDir, subDir));
+        removeFromPropertyList(parentProperties, 'android.library.reference', getRelativeLibraryPath(parentDir, subDir));
         delete this._subProjectDirs[subDir];
         this._dirty = true;
     },
     addGradleReference: function(parentDir, subDir) {
         var parentProjectFile = path.resolve(parentDir, 'project.properties');
         var parentProperties = this._getPropertiesFile(parentProjectFile);
-        addToPropertyList(parentProperties, 'cordova.gradle.include', module.exports.getRelativeLibraryPath(parentDir, subDir));
+        addToPropertyList(parentProperties, 'cordova.gradle.include', getRelativeLibraryPath(parentDir, subDir));
         this._dirty = true;
     },
     removeGradleReference: function(parentDir, subDir) {
         var parentProjectFile = path.resolve(parentDir, 'project.properties');
         var parentProperties = this._getPropertiesFile(parentProjectFile);
-        removeFromPropertyList(parentProperties, 'cordova.gradle.include', module.exports.getRelativeLibraryPath(parentDir, subDir));
+        removeFromPropertyList(parentProperties, 'cordova.gradle.include', getRelativeLibraryPath(parentDir, subDir));
         this._dirty = true;
     },
     addSystemLibrary: function(parentDir, value) {
@@ -147,11 +158,7 @@ AndroidProject.prototype = {
     }
 };
 
-
 module.exports = {
     AndroidProject: AndroidProject,
-    getRelativeLibraryPath: function (parentDir, subDir) {
-        var libraryPath = path.relative(parentDir, subDir);
-        return (path.sep == '\\') ? libraryPath.replace(/\\/g, '/') : libraryPath;
-    }
+    getRelativeLibraryPath: getRelativeLibraryPath
 };

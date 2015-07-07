@@ -122,7 +122,10 @@ module.exports = {
 
             events.emit('verbose', 'Installing Android library: ' + src);
             var parent = obj.parent;
-            var parentDir = parent ? path.resolve(project_dir, parent) : project_dir;
+            var parentDir = parent ?
+                    path.resolve(project_dir, getCustomSubprojectRelativeDir(plugin_id, project_dir, parent)) :
+                    project_dir;
+
             var subDir;
             var type = obj.type;
 
@@ -135,7 +138,7 @@ module.exports = {
                     type = 'sys';
                     subDir = src;
                 } else {
-                    var sdk_dir = getProjectSdkDir(project_dir);
+                    var sdk_dir = getProjectSdkDir(parentDir);
                     subDir = path.resolve(sdk_dir, src);
                 }
             }
@@ -157,7 +160,9 @@ module.exports = {
 
             events.emit('verbose', 'Uninstalling Android library: ' + src);
             var parent = obj.parent;
-            var parentDir = parent ? path.resolve(project_dir, parent) : project_dir;
+            var parentDir = parent ?
+                    path.resolve(project_dir, getCustomSubprojectRelativeDir(plugin_id, project_dir, parent)) :
+                    project_dir;
             var subDir;
             var type = obj.type;
 
@@ -175,7 +180,7 @@ module.exports = {
                     type = 'sys';
                     subDir = src;
                 } else {
-                    var sdk_dir = getProjectSdkDir(project_dir);
+                    var sdk_dir = getProjectSdkDir(parentDir);
                     subDir = path.resolve(sdk_dir, src);
                 }
             }
