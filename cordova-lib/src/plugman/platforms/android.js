@@ -144,7 +144,7 @@ module.exports = {
                     type = 'sys';
                     subDir = src;
                 } else {
-                    var sdk_dir = getProjectSdkDir(project_dir);
+                    var sdk_dir = getProjectSdkDir(parentDir);
                     subDir = path.resolve(sdk_dir, src);
                 }
             }
@@ -186,7 +186,7 @@ module.exports = {
                     type = 'sys';
                     subDir = src;
                 } else {
-                    var sdk_dir = getProjectSdkDir(project_dir);
+                    var sdk_dir = getProjectSdkDir(parentDir);
                     subDir = path.resolve(sdk_dir, src);
                 }
             }
