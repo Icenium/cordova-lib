@@ -271,10 +271,14 @@ function runUninstallPlatform(actions, platform, project_dir, plugin_dir, plugin
     }
 
    if(run_hooks) {
-
+        var platform_project =  platform_modules.getPlatformProject(platform, project_dir);
+                
         // using unified hooksRunner
         var hooksRunnerOptions = {
-            cordova: { platforms: [ platform ] },
+            cordova: { 
+                platforms: [ platform ],
+                project: platform_project
+            },
             plugin: {
                 id: pluginInfo.id,
                 pluginInfo: pluginInfo,
