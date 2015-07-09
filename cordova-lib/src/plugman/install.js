@@ -343,11 +343,16 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
             if ( !fs.existsSync(install_plugin_dir) ) {
                 copyPlugin(plugin_dir, plugins_dir, options.link, pluginInfoProvider);
             }
-
+           
             if(run_hooks) {
+                var platform_project =  platform_modules.getPlatformProject(platform, project_dir);
+                
                 // using unified hooksRunner
                 var hookOptions = {
-                    cordova: { platforms: [ platform ] },
+                    cordova: { 
+                        platforms: [ platform ],
+                        project: platform_project
+                    },
                     plugin: {
                         id: pluginInfo.id,
                         pluginInfo: pluginInfo,
