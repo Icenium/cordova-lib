@@ -138,7 +138,11 @@ module.exports = {
                     type = 'sys';
                     subDir = src;
                 } else {
-                    var sdk_dir = getProjectSdkDir(parentDir);
+                    // TODO: pass parentDir along with project_dir
+                    // to try and get the sdk dir - if it's not in the parent's local.properties
+                    // look for it in project's local.properties
+                    // if it's not there either check ANDROID_HOME env variable
+                    var sdk_dir = getProjectSdkDir(project_dir);
                     subDir = path.resolve(sdk_dir, src);
                 }
             }
