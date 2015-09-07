@@ -48,6 +48,7 @@ var install = require('../src/plugman/install'),
         'org.test.plugins.childbrowser' : path.join(plugins_dir, 'org.test.plugins.childbrowser'),
         'com.adobe.vars' : path.join(plugins_dir, 'com.adobe.vars'),        
         'org.test.plugin-with-hooks' : path.join(plugins_dir, 'org.test.plugin-with-hooks'),
+        'org.test.defaultvariables' : path.join(plugins_dir, 'org.test.defaultvariables'),
         'A' : path.join(plugins_dir, 'dependencies', 'A'),
         'B' : path.join(plugins_dir, 'dependencies', 'B'),
         'C' : path.join(plugins_dir, 'dependencies', 'C'),
@@ -130,6 +131,10 @@ describe('start', function() {
             }
         ).then(
             function(){
+                return install('android', project, plugins['org.test.defaultvariables'], plugins_install_dir, { cli_variables:{API_KEY:'batman'} });
+            }
+        ).then(
+            function(){
                 done = true;
                 results['prepareCount'] = prepare.callCount;
                 results['emit_results'] = [];
@@ -197,7 +202,7 @@ describe('install', function() {
         });
         
         it('should call prepare after a successful install', function() {
-           expect(results['prepareCount']).toBe(4);
+           expect(results['prepareCount']).toBe(5);
         });
 
         it('should emit a results event with platform-agnostic <info>', function() {
@@ -316,6 +321,7 @@ describe('install', function() {
                 // <engine name="mega-boring-plugin" version=">=3.0.0" scriptSrc="megaBoringVersion" platform="ios|android" />
 
                 var plugmanVersion = require('../package.json').version;
+                plugmanVersion = plugmanVersion.replace(/-dev$/, '');
 
                 expect(spy.calls.length).toBe(4);
                 expect(spy.calls[0].args).toEqual([ null, '>=2.3.0' ]);
@@ -491,7 +497,7 @@ describe('install', function() {
                 expect(''+done).toContain('"git" command line tool is not installed: make sure it is accessible on your PATH.');
             });
         });
-        it('should throw if plugin version is less than the minimum requirement', function(){
+        it('should not fail when trying to install plugin less than minimum version. Skip instead  ', function(){
             spyOn(semver, 'satisfies').andReturn(false);
             exec.andCallFake(function(cmd, cb) {
                 cb(null, '0.0.1\n');
@@ -501,7 +507,7 @@ describe('install', function() {
             });
             waitsFor(function(){ return done; }, 'install promise never resolved', 200);
             runs(function() {
-                expect(''+done).toContain('Plugin doesn\'t support this project\'s cordova version. cordova: 0.0.1, failed version requirement: >=2.3.0');
+                expect(''+done).toMatch(true);
             });
         });
     });
