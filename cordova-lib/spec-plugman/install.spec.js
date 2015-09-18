@@ -46,7 +46,8 @@ var install = require('../src/plugman/install'),
         'com.cordova.engine' : path.join(plugins_dir, 'com.cordova.engine'),
         'com.cordova.engine-android' : path.join(plugins_dir, 'com.cordova.engine-android'),
         'org.test.plugins.childbrowser' : path.join(plugins_dir, 'org.test.plugins.childbrowser'),
-        'com.adobe.vars' : path.join(plugins_dir, 'com.adobe.vars'),
+        'com.adobe.vars' : path.join(plugins_dir, 'com.adobe.vars'),        
+        'org.test.plugin-with-hooks' : path.join(plugins_dir, 'org.test.plugin-with-hooks'),
         'org.test.defaultvariables' : path.join(plugins_dir, 'org.test.defaultvariables'),
         'org.test.plugin-with-hooks' : path.join(plugins_dir, 'org.test.plugin-with-hooks'),
         'A' : path.join(plugins_dir, 'dependencies', 'A'),
@@ -175,9 +176,9 @@ describe('install', function() {
         spyOn(fs, 'writeFileSync').andReturn(true);
         cp = spyOn(shell, 'cp').andReturn(true);
         rm = spyOn(shell, 'rm').andReturn(true);
-        add_to_queue = spyOn(PlatformJson.prototype, 'addInstalledPluginToPrepareQueue');
+        add_to_queue = spyOn(PlatformJson.prototype, 'addInstalledPluginToPrepareQueue'); 
         fire = spyOn(HooksRunner.prototype, 'fire').andReturn(Q());
-        done = false;
+        done = false;       
     });
 
     describe('success', function() {
