@@ -41,7 +41,7 @@
     "underscore": "1.7.0",
     "unorm": "1.3.3",
     "valid-identifier": "0.0.1",
-    "xcode": "git+https://github.com/Icenium/node-xcode#7b42cdf36a2eff9b64da917ffa703d18d78798e4"
+    "xcode": "0.8.0"
   },
   "devDependencies": {
     "istanbul": "^0.3.4",
