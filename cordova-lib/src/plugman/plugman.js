@@ -94,6 +94,7 @@ plugman.commands =  {
             plugman.prepare = require('./prepare-browserify');
         }
         var cli_variables = {};
+
         if (cli_opts.variable) {
             cli_opts.variable.forEach(function (variable) {
                 var tokens = variable.split('=');
@@ -109,7 +110,6 @@ plugman.commands =  {
             link: cli_opts.link,
             run_hooks: !cli_opts.nohooks
         };
-
         var p = Q();
         cli_opts.plugin.forEach(function (pluginSrc) {
             p = p.then(function () {
