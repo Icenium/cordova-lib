@@ -134,7 +134,7 @@ module.exports = {
                 common.copyNewFile(plugin_dir, src, project_dir, subRelativeDir, options && options.link);
                 subDir = path.resolve(project_dir, subRelativeDir);
             } else {
-                if (semver.gte(options.platformVersion, '4.0.0-dev')) {
+                if (semver.gte(options.platformVersion, '3.6.0-dev')) {
                     type = 'sys';
                     subDir = src;
                 } else {
