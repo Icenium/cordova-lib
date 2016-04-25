@@ -313,12 +313,8 @@ describe('end', function() {
         done = false;
 
         promise.then(function(){
-                return uninstall('android', project, plugins['org.test.plugins.dummyplugin']);
-        }).then(function(){
                 return uninstall('android', project, plugins['org.test.plugin-with-hooks']);
-            }
-        ).then(
-            function(){
+        }).then(function(){
                 // Fails... A depends on
                 return uninstall('android', project, plugins['C']);
         }).fail(function(err) {
