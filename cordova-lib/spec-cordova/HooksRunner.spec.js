@@ -30,6 +30,7 @@ var cordova = require('../src/cordova/cordova'),
     helpers = require('./helpers'),
     PluginInfo = require('cordova-common').PluginInfo,
     superspawn = require('cordova-common').superspawn,
+    platform_modules = require('../src/platforms/platforms'),
     config = require('../src/cordova/config');
 
 var platform = os.platform();
@@ -423,6 +424,7 @@ describe('HooksRunner', function() {
                         var androidPluginOpts = {
                             cordova: {
                                 platforms: [ 'android' ],
+                                project: platform_modules.getPlatformApi('android', path.join(projectRoot, 'platforms/android/'))._handler, 
                                 plugins: ['com.plugin.withhooks'],
                                 version: cordovaVersion
                             },
@@ -432,6 +434,7 @@ describe('HooksRunner', function() {
                                 platform: 'android',
                                 dir: testPluginInstalledPath
                             },
+                            nohooks: undefined,
                             projectRoot: projectRoot
                         };
                         // Delete unique ids to allow comparing PluginInfo
@@ -448,8 +451,8 @@ describe('HooksRunner', function() {
                                 call.args[0] == 'after_plugin_install') {
                                 if(call.args[1] && call.args[1].plugin) {
                                     if(call.args[1].plugin.platform == 'android') {
-                                        expect(JSON.stringify(androidPluginOpts) ===
-                                            JSON.stringify(call.args[1])).toBe(true);
+                                        expect(JSON.stringify(androidPluginOpts))
+                                            .toEqual(JSON.stringify(call.args[1]));
                                     }
                                 }
                             }
