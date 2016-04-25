@@ -232,7 +232,7 @@ module.exports.uninstallPlugin = function(id, plugins_dir, options) {
 function runUninstallPlatform(actions, platform, project_dir, plugin_dir, plugins_dir, options) {
     var pluginInfoProvider = options.pluginInfoProvider,
         run_hooks = options.hasOwnProperty('run_hooks') ? options.run_hooks : true;
-        
+
     // If this plugin is not really installed, return (CB-7004).
     if (!fs.existsSync(plugin_dir)) {
         return Q();
@@ -291,11 +291,11 @@ function runUninstallPlatform(actions, platform, project_dir, plugin_dir, plugin
     }
 
    if(run_hooks) {
-        var platform_project =  platform_modules.getPlatformProject(platform, project_dir);
-                
+        var platform_project =  platform_modules.getPlatformApi(platform, project_dir)._handler;
+
         // using unified hooksRunner
         var hooksRunnerOptions = {
-            cordova: { 
+            cordova: {
                 platforms: [ platform ],
                 project: platform_project
             },
@@ -312,7 +312,7 @@ function runUninstallPlatform(actions, platform, project_dir, plugin_dir, plugin
         // but since we're running this code through plugman, we need to set it here implicitly
         options.usePlatformWww = true;
 
-        var hooksRunner = new HooksRunner(projectRoot);
+        var hooksRunner = new HooksRunner(cordovaUtil.isCordova() || project_dir);
 
         return promise.then(function() {
             return hooksRunner.fire('before_plugin_uninstall', hooksRunnerOptions);

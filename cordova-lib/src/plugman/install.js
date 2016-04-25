@@ -377,13 +377,13 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
             if ( !fs.existsSync(install_plugin_dir) ) {
                 copyPlugin(plugin_dir, plugins_dir, options.link, pluginInfoProvider);
             }
-           
+
             if(run_hooks) {
-                var platform_project =  platform_modules.getPlatformProject(platform, project_dir);
-                
+                var platform_project =  platform_modules.getPlatformApi(platform, project_dir)._handler;
+
                 // using unified hooksRunner
                 var hookOptions = {
-                    cordova: { 
+                    cordova: {
                         platforms: [ platform ],
                         project: platform_project
                     },
@@ -401,7 +401,7 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
                 // into platform_www but plugman CLI doesn't allow us to do that, so we set it here
                 options.usePlatformWww = true;
 
-                var hooksRunner = new HooksRunner(projectRoot);
+                var hooksRunner = new HooksRunner(cordovaUtil.isCordova() || project_dir);
 
                 return hooksRunner.fire('before_plugin_install', hookOptions).then(function() {
                     return handleInstall(actions, pluginInfo, platform, project_dir, plugins_dir, install_plugin_dir, filtered_variables, options);
@@ -414,7 +414,7 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
         }
     ).fail(
         function (error) {
-            
+
             if(error === 'skip') {
                 events.emit('warn', 'Skipping \'' + pluginInfo.id + '\' for ' + platform);
             } else {
