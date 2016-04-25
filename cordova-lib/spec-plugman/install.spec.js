@@ -226,10 +226,6 @@ describe('install', function() {
            });           
         });
         
-        it('should call prepare after a successful install', function() {
-           expect(results['prepareCount']).toBe(5);
-        });
-
         it('should emit a results event with platform-agnostic <info>', function() {
             // org.test.plugins.childbrowser
             expect(results['emit_results'][0]).toBe('No matter what platform you are installing to, this notice is very important.');

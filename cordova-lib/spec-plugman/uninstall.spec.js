@@ -283,16 +283,6 @@ describe('uninstall', function() {
                expect(fire).toHaveBeenCalled();
            });           
         });
-        
-        it('should call the config-changes module\'s add_uninstalled_plugin_to_prepare_queue method after processing an install', function() {
-            runs(function() {
-                uninstallPromise( uninstall('android', project, plugins['org.test.plugins.dummyplugin']) );
-            });
-            waitsFor(function() { return done; }, 'promise never resolved', 200);
-            runs(function() {
-                expect(add_to_queue).toHaveBeenCalledWith(dummy_id, true);
-            });
-        });
     });
 
     describe('failure', function() {
