@@ -22,7 +22,7 @@ var path = require('path');
 module.exports = function(project_dir){
     return {
         'cordova':
-            { 'platform':'*', 'scriptSrc': path.join(project_dir,'cordova','version') },
+            { 'platform':'*', 'currentVersion': require('../../../package.json').version },
         'cordova-plugman':
             { 'platform':'*', 'currentVersion': require('../../../package.json').version },
         'cordova-android':
@@ -35,8 +35,6 @@ module.exports = function(project_dir){
             { 'platform':'blackberry10', 'scriptSrc': path.join(project_dir,'cordova','version') },
         'cordova-wp8':
             { 'platform':'wp8', 'scriptSrc': path.join(project_dir,'cordova','version') },
-        'cordova-windows8':
-            { 'platform':'windows8', 'scriptSrc': path.join(project_dir,'cordova','version') },
         'cordova-windows':
             { 'platform':'windows', 'scriptSrc': path.join(project_dir,'cordova','version') },
         'apple-xcode' :

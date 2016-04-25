@@ -21,26 +21,27 @@
 
 var path = require('path'),
     fs   = require('fs'),
-    action_stack = require('./util/action-stack'),
+    action_stack = require('cordova-common').ActionStack,
     dep_graph = require('dep-graph'),
     child_process = require('child_process'),
     semver = require('semver'),
-    PlatformJson = require('./util/PlatformJson'),
-    CordovaError  = require('../CordovaError'),
+    PlatformJson = require('cordova-common').PlatformJson,
+    CordovaError = require('cordova-common').CordovaError,
     Q = require('q'),
     platform_modules = require('../platforms/platforms'),
     os = require('os'),
     underscore = require('underscore'),
     shell   = require('shelljs'),
-    events = require('../events'),
+    events = require('cordova-common').events,
     plugman = require('./plugman'),
     HooksRunner = require('../hooks/HooksRunner'),
     isWindows = (os.platform().substr(0,3) === 'win'),
+    pluginMapper = require('cordova-registry-mapper'),
     cordovaUtil = require('../cordova/util');
 
-var superspawn = require('../cordova/superspawn');
-var PluginInfo = require('../PluginInfo');
-var PluginInfoProvider = require('../PluginInfoProvider');
+var superspawn = require('cordova-common').superspawn;
+var PluginInfo = require('cordova-common').PluginInfo;
+var PluginInfoProvider = require('cordova-common').PluginInfoProvider;
 
 /* INSTALL FLOW
    ------------
@@ -48,7 +49,8 @@ var PluginInfoProvider = require('../PluginInfoProvider');
    providing a high-level logic flow overview.
    1. module.exports (installPlugin)
      a) checks that the platform is supported
-     b) invokes possiblyFetch
+     b) converts oldIds into newIds (CPR -> npm)
+     c) invokes possiblyFetch
    2. possiblyFetch
      a) checks that the plugin is fetched. if so, calls runInstall
      b) if not, invokes plugman.fetch, and when done, calls runInstall
@@ -56,7 +58,7 @@ var PluginInfoProvider = require('../PluginInfoProvider');
      a) checks if the plugin is already installed. if so, calls back (done).
      b) if possible, will check the version of the project and make sure it is compatible with the plugin (checks <engine> tags)
      c) makes sure that any variables required by the plugin are specified. if they are not specified, plugman will throw or callback with an error.
-     d) if dependencies are listed in the plugin, it will recurse for each dependent plugin and call possiblyFetch (2) on each one. When each dependent plugin is successfully installed, it will then proceed to call handleInstall (4)
+     d) if dependencies are listed in the plugin, it will recurse for each dependent plugin, autoconvert IDs to newIDs and call possiblyFetch (2) on each one. When each dependent plugin is successfully installed, it will then proceed to call handleInstall (4)
    4. handleInstall
      a) queues up actions into a queue (asset, source-file, headers, etc)
      b) processes the queue
@@ -68,9 +70,9 @@ var PluginInfoProvider = require('../PluginInfoProvider');
 module.exports = function installPlugin(platform, project_dir, id, plugins_dir, options) {
     project_dir = cordovaUtil.convertToRealPathSafe(project_dir);
     plugins_dir = cordovaUtil.convertToRealPathSafe(plugins_dir);
-
     options = options || {};
-    options.is_top_level = true;
+    if (!options.hasOwnProperty('is_top_level')) options.is_top_level = true;
+
     plugins_dir = plugins_dir || path.join(project_dir, 'cordova', 'plugins');
 
     if (!platform_modules[platform]) {
@@ -78,7 +80,6 @@ module.exports = function installPlugin(platform, project_dir, id, plugins_dir, 
     }
 
     var current_stack = new action_stack();
-
     return possiblyFetch(id, plugins_dir, options)
     .then(function(plugin_dir) {
         return runInstall(current_stack, platform, project_dir, plugin_dir, plugins_dir, options);
@@ -88,20 +89,41 @@ module.exports = function installPlugin(platform, project_dir, id, plugins_dir, 
 // possible options: subdir, cli_variables, www_dir, git_ref, is_top_level
 // Returns a promise.
 function possiblyFetch(id, plugins_dir, options) {
-
+    // Split @Version from the plugin id if it exists.
+    var splitVersion = id.split('@');
+    //Check if a mapping exists for the plugin id
+    //if it does, convert id to new name id
+    var newId = pluginMapper.oldToNew[splitVersion[0]];
+    if(newId) {
+        if(splitVersion[1]) {
+            id = newId +'@'+splitVersion[1];
+        } else {
+            id = newId;
+        }
+    }
     // if plugin is a relative path, check if it already exists
-    var plugin_src_dir = isAbsolutePath(id) ? id : path.join(plugins_dir, id);
+    var plugin_src_dir = isAbsolutePath(id) ? id : path.join(plugins_dir, splitVersion[0]);
 
     // Check that the plugin has already been fetched.
     if (fs.existsSync(plugin_src_dir)) {
         return Q(plugin_src_dir);
     }
 
+    var alias = pluginMapper.newToOld[splitVersion[0]] || newId;
+    // if the plugin alias has already been fetched, use it.
+    if (alias && fs.existsSync(path.join(plugins_dir, alias))) {
+        events.emit('warn', 'Found ' + alias + ' is already fetched, so it is installed instead of '+splitVersion[0]);
+        return Q(path.join(plugins_dir, alias));
+    }
+
+    // if plugin doesnt exist, use fetch to get it.
+    if (newId) {
+        events.emit('warn', 'Notice: ' + splitVersion[0] + ' has been automatically converted to ' + newId + ' and fetched from npm. This is due to our old plugins registry shutting down.');
+    }
     var opts = underscore.extend({}, options, {
         client: 'plugman'
     });
 
-    // if plugin doesnt exist, use fetch to get it.
     return plugman.raw.fetch(id, plugins_dir, opts);
 }
 
@@ -168,14 +190,12 @@ function cleanVersionOutput(version, name){
 
 // exec engine scripts in order to get the current engine version
 // Returns a promise for the array of engines.
-function callEngineScripts(engines) {
+function callEngineScripts(engines, project_dir) {
 
     return Q.all(
         engines.map(function(engine){
             // CB-5192; on Windows scriptSrc doesn't have file extension so we shouldn't check whether the script exists
-
             var scriptPath = engine.scriptSrc ? '"' + engine.scriptSrc + '"' : null;
-
             if(scriptPath && (isWindows || fs.existsSync(engine.scriptSrc)) ) {
 
                 var d = Q.defer();
@@ -241,9 +261,19 @@ function getEngines(pluginInfo, platform, project_dir, plugin_dir){
             }
         // check for other engines
         }else{
+            if (typeof engine.platform === 'undefined' || typeof engine.scriptSrc === 'undefined') {
+                throw new CordovaError('warn', 'engine.platform or engine.scriptSrc is not defined in custom engine \'' +
+                    theName + '\' from plugin \'' + pluginInfo.id + '\' for ' + platform);
+            }
+
             platformIndex = engine.platform.indexOf(platform);
+            // CB-7183: security check for scriptSrc path escaping outside the plugin
+            var scriptSrcPath = path.resolve(plugin_dir, engine.scriptSrc);
+            if (scriptSrcPath.indexOf(plugin_dir) !== 0) {
+                throw new Error('security violation: scriptSrc '+scriptSrcPath+' is out of plugin dir '+plugin_dir);
+            }
             if(platformIndex > -1 || engine.platform === '*'){
-                uncheckedEngines.push({ 'name': theName, 'platform': engine.platform, 'scriptSrc':path.resolve(plugin_dir, engine.scriptSrc), 'minVersion' :  engine.version});
+                uncheckedEngines.push({ 'name': theName, 'platform': engine.platform, 'scriptSrc':scriptSrcPath, 'minVersion' :  engine.version});
             }
         }
     });
@@ -269,14 +299,18 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
     var pluginInfoProvider = options.pluginInfoProvider;
     var pluginInfo   = pluginInfoProvider.get(plugin_dir);
     var filtered_variables = {};
-
     var platformJson = PlatformJson.load(plugins_dir, platform);
 
     if (platformJson.isPluginInstalled(pluginInfo.id)) {
         if (options.is_top_level) {
-            events.emit('results', 'Plugin "' + pluginInfo.id + '" already installed on ' + platform + '.');
+            var msg = 'Plugin "' + pluginInfo.id + '" already installed on ' + platform + '.';
+            if (platformJson.isPluginDependent(pluginInfo.id)) {
+                msg += ' Making it top-level.';
+                platformJson.makeTopLevel(pluginInfo.id).save();
+            }
+            events.emit('log', msg);
         } else {
-            events.emit('verbose', 'Dependent plugin "' + pluginInfo.id + '" already installed on ' + platform + '.');
+            events.emit('log', 'Dependent plugin "' + pluginInfo.id + '" already installed on ' + platform + '.');
         }
         return Q();
     }
@@ -300,7 +334,7 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
         return Q(superspawn.maybeSpawn(path.join(project_dir, 'cordova', 'version'), [], { chmod: true }));
     }).then(function(platformVersion) {
         options.platformVersion = platformVersion;
-        return callEngineScripts(theEngines);
+        return callEngineScripts(theEngines, path.resolve(plugins_dir, '..'));
     }).then(function(engines) {
         return checkEngines(engines);
     }).then(function() {
@@ -358,10 +392,16 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
                         pluginInfo: pluginInfo,
                         platform: install.platform,
                         dir: install.top_plugin_dir
-                    }
+                    },
+                    nohooks: options.nohooks
                 };
 
-                var hooksRunner = new HooksRunner(cordovaUtil.isCordova() || project_dir);
+                // CB-10708 This is the case when we're trying to install plugin using plugman to specific
+                // platform inside of the existing CLI project. In this case we need to put plugin's files
+                // into platform_www but plugman CLI doesn't allow us to do that, so we set it here
+                options.usePlatformWww = true;
+
+                var hooksRunner = new HooksRunner(projectRoot);
 
                 return hooksRunner.fire('before_plugin_install', hookOptions).then(function() {
                     return handleInstall(actions, pluginInfo, platform, project_dir, plugins_dir, install_plugin_dir, filtered_variables, options);
@@ -470,7 +510,6 @@ function tryFetchDependency(dep, install, options) {
                 dep.subdir = '';
                 return Q(url);
             }).fail(function(error){
-//console.log("Failed to resolve url='.': " + error);
                 return Q(dep.url);
             });
 
@@ -528,7 +567,6 @@ function installDependency(dep, install, options) {
     var opts;
 
     dep.install_dir = path.join(install.plugins_dir, dep.id);
-
     if ( fs.existsSync(dep.install_dir) ) {
         events.emit('verbose', 'Dependent plugin "' + dep.id + '" already fetched, using that version.');
         opts = underscore.extend({}, options, {
@@ -564,35 +602,27 @@ function handleInstall(actions, pluginInfo, platform, project_dir, plugins_dir, 
 
     // @tests - important this event is checked spec/install.spec.js
     events.emit('verbose', 'Install start for "' + pluginInfo.id + '" on ' + platform + '.');
-    var handler = platform_modules.getPlatformProject(platform, project_dir);
-    var frameworkFiles = pluginInfo.getFrameworks(platform); // Frameworks are needed later
-    var pluginItems = pluginInfo.getFilesAndFrameworks(platform);
 
-    // queue up native stuff
-    pluginItems.forEach(function(item) {
-        actions.push(actions.createAction(handler.getInstaller(item.itemType),
-                                          [item, plugin_dir, pluginInfo.id, options],
-                                          handler.getUninstaller(item.itemType),
-                                          [item, pluginInfo.id, options]));
-    });
+    options.variables = filtered_variables;
 
-    // run through the action stack
-    return actions.process(platform, project_dir)
-    .then(function(err) {
-        // queue up the plugin so prepare knows what to do.
-        var platformJson = PlatformJson.load(plugins_dir, platform);
-        platformJson.addInstalledPluginToPrepareQueue(pluginInfo.id, filtered_variables, options.is_top_level);
-        platformJson.save();
-        // call prepare after a successful install
-        if (options.browserify) {
-            return plugman.prepareBrowserify(project_dir, platform, plugins_dir, options.www_dir, options.is_top_level, options.pluginInfoProvider);
-        } else {
-            return plugman.prepare(project_dir, platform, plugins_dir, options.www_dir, options.is_top_level, options.pluginInfoProvider);
-        }
-    }).then (function() {
+    return platform_modules.getPlatformApi(platform, project_dir)
+    .addPlugin(pluginInfo, options)
+    .then (function() {
         events.emit('verbose', 'Install complete for ' + pluginInfo.id + ' on ' + platform + '.');
+        // Add plugin to installed list. This already done in platform,
+        // but need to be duplicated here to manage dependencies properly.
+        PlatformJson.load(plugins_dir, platform)
+            .addPlugin(pluginInfo.id, filtered_variables, options.is_top_level)
+            .save();
 
-        if (platform == 'android' && semver.gte(options.platformVersion, '4.0.0-dev') && frameworkFiles.length > 0) {
+        if (platform == 'android' &&
+                semver.gte(options.platformVersion, '4.0.0-dev') &&
+                // CB-10533 since 5.2.0-dev prepBuildFiles is now called internally by android platform and
+                // no more exported from build module
+                // TODO: This might be removed once we deprecate non-PlatformApi compatible platforms support
+                semver.lte(options.platformVersion, '5.2.0-dev') &&
+                pluginInfo.getFrameworks(platform).length > 0) {
+
             events.emit('verbose', 'Updating build files since android plugin contained <framework>');
             var buildModule;
             try {

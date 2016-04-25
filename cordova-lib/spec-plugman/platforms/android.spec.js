@@ -24,7 +24,7 @@ var android = require('../../src/plugman/platforms/android'),
     path    = require('path'),
     fs      = require('fs'),
     shell   = require('shelljs'),
-    os      = require('osenv'),
+    os      = require('os'),
     temp    = path.join(os.tmpdir(), 'plugman'),
     plugins_dir = path.join(temp, 'cordova', 'plugins'),
     androidonlyplugin = path.join(__dirname, '..', 'plugins', 'org.test.androidonly'),
@@ -33,7 +33,7 @@ var android = require('../../src/plugman/platforms/android'),
     android_one_project = path.join(__dirname, '..', 'projects', 'android_one', '*'),
     android_two_project = path.join(__dirname, '..', 'projects', 'android_two', '*');
 
-var PluginInfo = require('../../src/PluginInfo');
+var PluginInfo = require('cordova-common').PluginInfo;
 
 var dummyPluginInfo = new PluginInfo(dummyplugin);
 var androidonlyPluginInfo = new PluginInfo(androidonlyplugin);
@@ -282,7 +282,7 @@ describe('android project handler', function() {
             var exec = spyOn(shell, 'exec');
 
             android['framework'].install(frameworkElement, dummyplugin, temp, dummy_id, { platformVersion: '3.0.0' });
-            fs.writeFileSync(path.join(parentDir, 'local.properties'), 'sdk.dir=' + path.join(temp, '..', 'SDK').replace(/\\/g, '/'));
+            fs.writeFileSync(path.join(temp, 'local.properties'), 'sdk.dir=' + path.join(temp, '..', 'SDK').replace(/\\/g, '/'));
             android['framework'].install(frameworkElementChild, dummyplugin, temp, dummy_id, { platformVersion: '3.0.0' });
 
             android.parseProjectFile(temp).write();

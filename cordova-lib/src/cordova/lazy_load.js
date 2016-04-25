@@ -25,8 +25,7 @@ var path          = require('path'),
     fs            = require('fs'),
     shell         = require('shelljs'),
     platforms     = require('../platforms/platforms'),
-    npmconf       = require('npmconf'),
-    events        = require('../events'),
+    events        = require('cordova-common').events,
     request       = require('request'),
     config        = require('./config'),
     HooksRunner   = require('../hooks/HooksRunner'),
@@ -76,9 +75,6 @@ function Platform(platformString) {
 // Returns a promise for the path to the lazy-loaded directory.
 function based_on_config(project_root, platform, opts) {
     var custom_path = config.has_custom_path(project_root, platform);
-    if (custom_path === false && platform === 'windows') {
-        custom_path = config.has_custom_path(project_root, 'windows8');
-    }
     if (custom_path) {
         var dot_file = config.read(project_root),
             mixed_platforms = _.extend({}, platforms);
@@ -92,7 +88,7 @@ function based_on_config(project_root, platform, opts) {
 // Returns a promise for the path to the lazy-loaded directory.
 function cordova(platform, opts) {
     platform = new Platform(platform);
-    var use_git = opts && opts.usegit || platform.source === 'git';
+    var use_git = platform.source === 'git';
     if ( use_git ) {
         return module.exports.cordova_git(platform);
     } else {
@@ -219,15 +215,15 @@ function custom(platforms, platform) {
     }).then(function() {
         var uri = URL.parse(url);
         var d = Q.defer();
-        npmconf.load(function(err, conf) {
+        npm.load(function(err) {
             // Check if NPM proxy settings are set. If so, include them in the request() call.
             var proxy;
             if (uri.protocol == 'https:') {
-                proxy = conf.get('https-proxy');
+                proxy = npm.config.get('https-proxy');
             } else if (uri.protocol == 'http:') {
-                proxy = conf.get('proxy');
+                proxy = npm.config.get('proxy');
             }
-            var strictSSL = conf.get('strict-ssl');
+            var strictSSL = npm.config.get('strict-ssl');
 
             // Create a tmp dir. Using /tmp is a problem because it's often on a different partition and sehll.mv()
             // fails in this case with "EXDEV, cross-device link not permitted".

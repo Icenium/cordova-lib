@@ -17,32 +17,31 @@
     under the License.
 */
 
-var path              = require('path'),
-    cordova_util      = require('./util'),
-    HooksRunner       = require('../hooks/HooksRunner'),
-    events            = require('../events'),
-    chain             = require('../util/promise-util').Q_chainmap,
-    superspawn        = require('./superspawn');
+var Q = require('q'),
+    cordova_util = require('./util'),
+    HooksRunner  = require('../hooks/HooksRunner'),
+    events       = require('cordova-common').events,
+    chain        = require('../util/promise-util').Q_chainmap,
+    platform_lib = require('../platforms/platforms');
 
 // Returns a promise.
 module.exports = function clean(options) {
-    var projectRoot = cordova_util.cdProjectRoot();
-    options = cordova_util.preProcessOptions(options);
+    return Q().then(function() {
+        var projectRoot = cordova_util.cdProjectRoot();
+        options = cordova_util.preProcessOptions(options);
 
-    var hooksRunner = new HooksRunner(projectRoot);
-    return hooksRunner.fire('before_clean', options)
-    .then(function () {
-        return chain(options.platforms, function (platform) {
-            events.emit('verbose', 'Running cleanup for ' + platform + ' platform.');
-            var cmd = path.join(projectRoot, 'platforms', platform, 'cordova', 'clean');
-            return superspawn.spawn(cmd, options.options, {
-                stdio: options.silent ? 'ignore' : 'inherit', // hide script output in silent mode
-                printCommand: !!options.verbose,              // print command only if --verbose specified
-                chmod: true
+        var hooksRunner = new HooksRunner(projectRoot);
+        return hooksRunner.fire('before_clean', options)
+        .then(function () {
+            return chain(options.platforms, function (platform) {
+                events.emit('verbose', 'Running cleanup for ' + platform + ' platform.');
+                return platform_lib
+                    .getPlatformApi(platform)
+                    .clean();
             });
+        })
+        .then(function() {
+            return hooksRunner.fire('after_clean', options);
         });
-    })
-    .then(function() {
-        return hooksRunner.fire('after_clean', options);
     });
 };

@@ -19,15 +19,16 @@
 
 var cordova_util = require('./util'),
     Q = require('q'),
-    superspawn = require('./superspawn'),
+    superspawn = require('cordova-common').superspawn,
     path = require('path'),
-    events = require('../events');
+    events = require('cordova-common').events;
 
 function handleError(error) {
     if (error.code === 'ENOENT') {
-        events.emit('log', 'Platform does not support ' + this.script);
+        events.emit('warn', 'Platform does not support ' + this.script);
     } else {
-        events.emit('log', 'An unexpected error has occured');
+        events.emit('warn', 'An unexpected error has occured while running ' + this.script +
+            ' with code ' + error.code + ': ' + error);
     }
 }
 
@@ -35,28 +36,25 @@ function displayDevices(projectRoot, platform, options) {
     var caller = { 'script': 'list-devices' };
     events.emit('log', 'Available ' + platform + ' devices:');
     var cmd = path.join(projectRoot, 'platforms', platform, 'cordova', 'lib', 'list-devices');
-    return superspawn.spawn(cmd, options, { stdio: 'inherit', chmod: true }).catch(handleError.bind(caller));
+    return superspawn.spawn(cmd, options.argv, { stdio: 'inherit', chmod: true }).catch(handleError.bind(caller));
 }
 
 function displayVirtualDevices(projectRoot, platform, options) {
     var caller = { 'script': 'list-emulator-images' };
     events.emit('log', 'Available ' + platform + ' virtual devices:');
     var cmd = path.join(projectRoot, 'platforms', platform, 'cordova', 'lib', 'list-emulator-images');
-    return superspawn.spawn(cmd, options, { stdio: 'inherit', chmod: true }).catch(handleError.bind(caller));
+    return superspawn.spawn(cmd, options.argv, { stdio: 'inherit', chmod: true }).catch(handleError.bind(caller));
 }
 
 module.exports = function targets(options) {
     var projectRoot = cordova_util.cdProjectRoot();
     options = cordova_util.preProcessOptions(options);
 
-    // Remove --list from parameters
-    options.options.splice(options.options.indexOf('--list'), 1);
-
     var result = Q();
     options.platforms.forEach(function(platform) {
-        if (options.options.indexOf('--device') >= 0) {
+        if (options.options.device) {
             result = result.then(displayDevices.bind(null, projectRoot, platform, options.options));
-        } else if(options.options.indexOf('--emulator') >= 0) {
+        } else if(options.options.emulator) {
             result = result.then(displayVirtualDevices.bind(null, projectRoot, platform, options.options));
         } else {
             result = result.then(displayDevices.bind(null, projectRoot, platform, options.options))

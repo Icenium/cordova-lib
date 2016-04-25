@@ -22,20 +22,20 @@ var helpers = require('./helpers'),
     fs = require('fs'),
     shell = require('shelljs'),
     Q = require('q'),
-    events = require('../src/events'),
-    ConfigParser = require('../src/configparser/ConfigParser'),
+    events = require('cordova-common').events,
+    ConfigParser = require('cordova-common').ConfigParser,
     cordova = require('../src/cordova/cordova');
 
 var tmpDir = helpers.tmpDir('create_test');
 var appName = 'TestBase';
 var appId = 'org.testing';
 var project = path.join(tmpDir, appName);
+
 var configNormal = {
       lib: {
         www: {
           url: path.join(__dirname, 'fixtures', 'base', 'www'),
-          version: 'testCordovaCreate',
-          id: appName
+          version: 'testCordovaCreate'
         }
       }
     };
@@ -47,6 +47,26 @@ var configSymlink = {
         }
       }
     };
+
+var configGit = {
+    lib: {
+        www: {
+            url: 'https://github.com/apache/cordova-app-hello-world',
+            template: true,
+            version: 'not_versioned'
+        }
+    }
+};
+
+var configNPM = {
+    lib: {
+        www: {
+            template: true,
+            url: 'cordova-app-hello-world',
+            version: ''
+        }
+    }
+};
 
 describe('cordova create checks for valid-identifier', function(done) {
 
@@ -69,11 +89,14 @@ describe('cordova create checks for valid-identifier', function(done) {
 
 
 describe('create end-to-end', function() {
+    //this.timeout(240000);
 
     beforeEach(function() {
         shell.rm('-rf', project);
         shell.mkdir('-p', tmpDir);
     });
+
+
     afterEach(function() {
         process.chdir(path.join(__dirname, '..'));  // Needed to rm the dir on Windows.
         shell.rm('-rf', tmpDir);
@@ -92,7 +115,7 @@ describe('create end-to-end', function() {
         expect(path.join(project, 'www', 'index.html')).toExist();
 
         // Check that www/config.xml was updated.
-        var configXml = new ConfigParser(path.join(project, 'www', 'config.xml'));
+        var configXml = new ConfigParser(path.join(project, 'config.xml'));
         expect(configXml.packageName()).toEqual(appId);
 
         // TODO (kamrik): check somehow that we got the right config.xml from the fixture and not some place else.
@@ -105,37 +128,166 @@ describe('create end-to-end', function() {
     it('should successfully run with regular config', function(done) {
         // Call cordova create with no args, should return help.
         Q()
-        .then(function() {
-            // Create a real project
-            return cordova.raw.create(project, appId, appName, configNormal);
-        })
-        .then(checkProject)
-        .fail(function(err) {
-            console.log(err && err.stack);
-            expect(err).toBeUndefined();
-        })
-        .fin(done);
+            .then(function() {
+                // Create a real project
+                return cordova.raw.create(project, appId, appName, configNormal);
+            })
+            .then(checkProject)
+            .fail(function(err) {
+                console.log(err && err.stack);
+                expect(err).toBeUndefined();
+            })
+            .fin(done);
     });
 
     it('should successfully run with symlinked www', function(done) {
         // Call cordova create with no args, should return help.
         cordova.raw.create(project, appId, appName, configSymlink)
-        .then(checkProject)
-        .then(function() {
-            // Check that www is really a symlink
-            expect(fs.lstatSync(path.join(project, 'www')).isSymbolicLink()).toBe(true);
-        })
-        .fail(function(err) {
-            if(process.platform.slice(0, 3) == 'win') {
-                // Allow symlink error if not in admin mode
-                expect(err.message).toBe('Symlinks on Windows require Administrator privileges');
-            } else {
-                if (err) {
-                    console.log(err.stack);
+            .then(checkProject)
+            .then(function() {
+                // Check that www is really a symlink
+                expect(fs.lstatSync(path.join(project, 'www')).isSymbolicLink()).toBe(true);
+            })
+            .fail(function(err) {
+                if(process.platform.slice(0, 3) == 'win') {
+                    // Allow symlink error if not in admin mode
+                    expect(err.message).toBe('Symlinks on Windows require Administrator privileges');
+                } else {
+                    if (err) {
+                        console.log(err.stack);
+                    }
+                    expect(err).toBeUndefined();
                 }
-                expect(err).toBeUndefined();
-            }
-        })
-        .fin(done);
+            })
+            .fin(done);
     });
+
+   it('should successfully run with Git URL', function(done) {
+        // Call cordova create with no args, should return help.
+        Q()
+            .then(function() {
+                // Create a real project
+                return cordova.raw.create(project, appId, appName, configGit);
+            })
+            .then(checkProject)
+            .fail(function(err) {
+                console.log(err && err.stack);
+                expect(err).toBeUndefined();
+            })
+            .fin(done);
+    }, 60000);
+
+    it('should successfully run with NPM package', function(done) {
+        // Call cordova create with no args, should return help.
+        Q()
+            .then(function() {
+                // Create a real project
+                return cordova.raw.create(project, appId, appName, configNPM);
+            })
+            .then(checkProject)
+            .fail(function(err) {
+                console.log(err && err.stack);
+                expect(err).toBeUndefined();
+            })
+            .fin(done);
+    });
+    
+    it('should successfully run with template not having a package.json at toplevel', function(done) {
+        // Call cordova create with no args, should return help.
+        var config = {
+            lib: {
+                www: {
+                    template: true,
+                    url: path.join(__dirname, 'fixtures', 'templates', 'nopackage_json'),
+                    version: ''
+                }
+            }
+        };
+        Q()
+            .then(function() {
+                // Create a real project
+                return cordova.raw.create(project, appId, appName, config);
+            })
+            .then(checkProject)
+            .fail(function(err) {
+                console.log(err && err.stack);
+                expect(err).toBeUndefined();
+            })
+            .fin(done);
+    });
+    
+    it('should successfully run with template having package.json and no sub directory', function(done) {
+        // Call cordova create with no args, should return help.
+        var config = {
+            lib: {
+                www: {
+                    template: true,
+                    url: path.join(__dirname, 'fixtures', 'templates', 'withpackage_json'),
+                    version: ''
+                }
+            }
+        };
+        Q()
+            .then(function() {
+                // Create a real project
+                return cordova.raw.create(project, appId, appName, config);
+            })
+            .then(checkProject)
+            .fail(function(err) {
+                console.log(err && err.stack);
+                expect(err).toBeUndefined();
+            })
+            .fin(done);
+    });
+    
+    it('should successfully run with template having package.json, and subdirectory, and no package.json in subdirectory', function(done) {
+        // Call cordova create with no args, should return help.
+        var config = {
+            lib: {
+                www: {
+                    template: true,
+                    url: path.join(__dirname, 'fixtures', 'templates', 'withsubdirectory'),
+                    version: ''
+                }
+            }
+        };
+        Q()
+            .then(function() {
+                // Create a real project
+                return cordova.raw.create(project, appId, appName, config);
+            })
+            .then(checkProject)
+            .fail(function(err) {
+                console.log(err && err.stack);
+                expect(err).toBeUndefined();
+            })
+            .fin(done);
+    });
+    
+    it('should successfully run with template having package.json, and subdirectory, and package.json in subdirectory', function(done) {
+        // Call cordova create with no args, should return help.
+        var config = {
+            lib: {
+                www: {
+                    template: true,
+                    url: path.join(__dirname, 'fixtures', 'templates', 'withsubdirectory_package_json'),
+                    version: ''
+                }
+            }
+        };
+        Q()
+            .then(function() {
+                // Create a real project
+                return cordova.raw.create(project, appId, appName, config);
+            })
+            .then(checkProject)
+            .fail(function(err) {
+                console.log(err && err.stack);
+                expect(err).toBeUndefined();
+            })
+            .fin(done);
+    });
+
+
+
 });
