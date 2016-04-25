@@ -258,7 +258,7 @@ describe('android project handler', function() {
             var exec = spyOn(shell, 'exec');
 
             android['framework'].install(frameworkElement, dummyplugin, temp, dummy_id, { platformVersion: '3.0.0' });
-            fs.writeFileSync(path.join(parentDir, 'local.properties'), 'sdk.dir=' + path.join(temp, '..', 'SDK').replace(/\\/g, '/'));
+            fs.writeFileSync(path.join(temp, 'local.properties'), 'sdk.dir=' + path.join(temp, '..', 'SDK').replace(/\\/g, '/'));
             android['framework'].install(frameworkElementChild, dummyplugin, temp, dummy_id, { platformVersion: '3.0.0' });
 
             android.parseProjectFile(temp).write();

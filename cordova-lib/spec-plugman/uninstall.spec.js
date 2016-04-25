@@ -311,7 +311,7 @@ describe('uninstall', function() {
                 done();
             });
         });
-        
+
     });
 
     describe('failure', function() {
@@ -341,11 +341,9 @@ describe('uninstall', function() {
 
 describe('end', function() {
     it('Test 013 : end', function(done) {
-        return uninstall('android', project, plugins['org.test.plugins.dummyplugin'])
-        .then(function(){
-            // Fails... A depends on
-            return uninstall('android', project, plugins['C']);
-        }).fail(function(err) {
+        // Fails... A depends on
+        return uninstall('android', project, plugins['C'])
+        .fail(function(err) {
             expect(err.stack).toMatch(/The plugin 'C' is required by \(A\), skipping uninstallation./);
         }).then(function(){
             // dependencies on C,D ... should this only work with --recursive? prompt user..?
