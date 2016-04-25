@@ -333,6 +333,7 @@ describe('uninstall', function() {
             });
             waitsFor(function() { return done; }, 'promise never resolved', 200);
         });
+        
     });
 
     describe('failure', function() {

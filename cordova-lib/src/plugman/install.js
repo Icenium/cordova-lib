@@ -381,13 +381,13 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
             if ( !fs.existsSync(install_plugin_dir) ) {
                 copyPlugin(plugin_dir, plugins_dir, options.link, pluginInfoProvider);
             }
-           
+
             if(run_hooks) {
-                var platform_project =  platform_modules.getPlatformApi(platform, project_dir);
-                
+                var platform_project =  platform_modules.getPlatformApi(platform, project_dir)._handler;
+
                 // using unified hooksRunner
                 var hookOptions = {
-                    cordova: { 
+                    cordova: {
                         platforms: [ platform ],
                         project: platform_project
                     },
@@ -420,7 +420,7 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
         }
     ).fail(
         function (error) {
-            
+
             if(error === 'skip') {
                 events.emit('warn', 'Skipping \'' + pluginInfo.id + '\' for ' + platform);
             } else {
