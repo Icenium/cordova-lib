@@ -22,13 +22,13 @@
 var fs            = require('fs'),
     path          = require('path'),
     util          = require('../util'),
-    events        = require('../../events'),
+    events        = require('cordova-common').events,
     shell         = require('shelljs'),
     Q             = require('q'),
     Parser        = require('./parser'),
-    ConfigParser  = require('../../configparser/ConfigParser'),
-    CordovaError  = require('../../CordovaError'),
-    xml           = require('../../util/xml-helpers'),
+    ConfigParser = require('cordova-common').ConfigParser,
+    CordovaError = require('cordova-common').CordovaError,
+    xml           = require('cordova-common').xmlHelpers,
     HooksRunner        = require('../../hooks/HooksRunner');
 
 function wp8_parser(project) {
@@ -248,7 +248,7 @@ wp8_parser.prototype.update_www = function() {
 
 // calls the nessesary functions to update the wp8 project
 // Returns a promise.
-wp8_parser.prototype.update_project = function(cfg) {
+wp8_parser.prototype.update_project = function(cfg, opts) {
     try {
         this.update_from_config(cfg);
     } catch(e) {
@@ -260,7 +260,7 @@ wp8_parser.prototype.update_project = function(cfg) {
     var projectRoot = util.isCordova(process.cwd());
 
     var hooksRunner = new HooksRunner(projectRoot);
-    return hooksRunner.fire('pre_package', { wwwPath:this.www_dir(), platforms: ['wp8'] })
+    return hooksRunner.fire('pre_package', { wwwPath:this.www_dir(), platforms: ['wp8'], nohooks: opts? opts.nohooks: []})
     .then(function() {
         util.deleteSvnFolders(that.www_dir());
     });

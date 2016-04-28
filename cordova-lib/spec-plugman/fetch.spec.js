@@ -19,7 +19,7 @@
 var rewire  = require('rewire'),
     fetch   = rewire('../src/plugman/fetch'),
     fs      = require('fs'),
-    os      = require('osenv'),
+    os      = require('os'),
     path    = require('path'),
     shell   = require('shelljs'),
     realrm = shell.rm,
@@ -247,6 +247,33 @@ describe('fetch', function() {
         });
     });
 
+    describe('fetch recursive error CB-8809', function(){
+
+        var srcDir = path.join(__dirname, 'plugins/recursivePlug');
+        var appDir = path.join(__dirname, 'plugins/recursivePlug/demo');
+        
+        if(/^win/.test(process.platform)) {
+            it('should copy all but the /demo/ folder',function(done) {
+                var cp = spyOn(shell, 'cp');
+                wrapper(fetch(srcDir, appDir),done, function() {
+                    expect(cp).toHaveBeenCalledWith('-R',path.join(srcDir,'asset.txt'),path.join(appDir,'test-recursive'));
+                    expect(cp).not.toHaveBeenCalledWith('-R',srcDir,path.join(appDir,'test-recursive'));
+                });
+            });
+        }
+        else {
+            it('should skip copy to avoid recursive error', function(done) {
+
+                var cp = spyOn(shell, 'cp').andCallFake(function(){});
+
+                wrapper(fetch(srcDir, appDir),done, function() {
+                    expect(cp).not.toHaveBeenCalled();
+                });
+            });
+        }
+
+    });
+
     describe('registry plugins', function() {
         var pluginId = 'dummyplugin', sFetch;
         var rm, sym, save_metadata;
@@ -259,11 +286,6 @@ describe('fetch', function() {
         });
 
 
-        it('should get a plugin from registry and set the right client when argument is not a folder nor URL', function(done) {
-            wrapper(fetch(pluginId, temp, {client: 'plugman'}), done, function() {
-                expect(sFetch).toHaveBeenCalledWith([pluginId], 'plugman');
-            });
-        });
         it('should fail when the expected ID doesn\'t match', function(done) {
             fetch(pluginId, temp, { expected_id: 'wrongID' })
             .then(function() {

@@ -20,6 +20,84 @@
 -->
 # Cordova-lib Release Notes
 
+### 6.0.0 (Jan 25, 2016)
+* CB-10432 Fix plugin installation for newly added platform
+* CB-10423 allow recursive folder copy skipping whatever .. was
+* CB-10394 updated pinned **Android** version to `~5.1.0`
+* CB-10299 updated pinned **windows** version to `~4.3.0`
+* CB-10274 Make www directory the default for plugman
+* CB-10121 added deprecation notice for **amazon-fireos** and **wp8**
+* CB-7183 prevent read/write/modify files outside project from plugins
+* CB-8455 Added `--nohooks` option.
+* CB-10193 Add deprecation notice about `pre_package` removal
+* CB-10147 updated pinned **iOS** to `~4.0.0`
+* CB-10125: Android build fails on read-only files.
+* CB-6698 Fix directory resolution of framework with parent.
+* CB-9653 Adds copying of **blackberry10** splashscreens
+* **Ubuntu** support for the new plugin naming convention
+* CB-9957 removed support for fetching from Cordova Plugins Registry. Only fetch plugins from **npm** now.
+* CB-10108 Fixes **android** frameworks installation/removal
+* CB-9964 Added `--template` support to `cordova create`
+* Removing the `--usegit` flag from `cordova platform`. Recommended method is to use `cordova platform add git_url#branch`
+* CB-10081 pinned plugin versions. These are default versions fetched when adding a plugin.
+* add missing `package_suffix` function on **amazon-fireos** platform for plugman installations.
+* CB-10057 - removing `<access>` tag does not remove `ATS` entry
+* CB-10048 clobbering of `<access>` tags to `ATS` directives
+
+### 5.4.1 (Nov 19, 2015)
+* CB-9976 Reinstall plugins for platform if they were installed with `cordova@<5.4.0`. 
+* CB-9981 `path.parse` only available on `node 0.12+`.
+* CB-9987 Adds compatibility layer for `cordova.raw.*` methods
+* CB-9975 Fix issue with using `all" as orientation for **iOS**
+* CB-9984 Bumps `plist` version and fixes failing `cordova-common` test
+
+### 5.4.0 (Oct 30, 2015)
+* CB-9935 Cordova CLI silently fails on node.js v5
+* CB-9834 Introduce compat map for hook requires
+* CB-9902 Fix broken `cordova run --list`
+* CB-9872 Fixed save.spec.11 failure
+* CB-9800 Fixing contribute link.
+* CB-9736 Extra main activity generated when an android package name is specified
+* CB-9675 OSX App Icons are not properly copied.
+* CB-9758 Mobilespec crashes adding plugins on OS X
+* CB-9782 Update create/update signatures for PlatformApi polyfill
+* CB-9815 Engine name="cordova" should check tools version, not platforms. 
+* CB-9824 removed plugin download counter code from lib
+* CB-9821 Fix EventEmitter incorrect trace level usages
+* CB-9813 Keep module-to-plugin mapping at hand.
+* CB-9598 Fixes broken `require` for FFOS plugin handler
+* Update 'serve' to use 'express' implementation of cordova-serve.
+* CB-9712 CLI 5.3 breaks with node 3.3.3
+* CB-9598 Fixies broken require calls that aren't covered by tests
+* CB-9589 added more warnings and added conversion step to fetch.js
+* CB-9589 auto convert old plugin ids to new npm ids using [registry-mapper](https://github.com/stevengill/cordova-registry-mapper)
+* Pick ConfigParser changes from apache@0c3614e
+* CB-9743 Removes system frameworks handling from ConfigChanges
+* CB-9598 Cleans out code which has been moved to `cordova-common`
+* CB-9598 Switches LIB to use `cordova-common`
+* CB-9569 Support <access> and <allow-navigation> tag translation to Application Transport Security (ATS) Info.plist directives.
+* CB-9737 (save flag) unit test failures for spec.14
+* CB-8914 when project is renamed, remove userdata otherwise project is un-usable in xcode
+* CB-9665 Support .xcassets for icons and splashscreens in the CLI
+* CB-9407 Fixes incorrect applying of plugin-provided config changes.
+* CB-8198 Unified console output logic for core platforms
+* CB-9408 Added support for `windows-packageVersion` on `<widget>`
+* CB-9588 Plugman. Add support for <resource-file> on Windows
+* CB-8615 Improves plugman tests for Windows
+* CB-8615 **Windows** .winmd files with the same names are not added properly when using framework tag with target attribute
+* CB-9297 Parse xcode project syncronously to avoid issues with node v4
+* CB-9617 Do not restore plugins after plugin removal.
+* CB-9631 Save plugin to config.xml only if installation succeeds
+* CB-9601 Fix <framework>.versions support on Windows after semver update
+* CB-9617 Fixes incorrect project state after adding/removing plugins
+* CB-9560 Issue using plugin restore for plugins with common dependencies 
+* CB-8993 Plugin restore ignores search path
+* CB-9587 Check if browser platform added properly before creating parser. 
+* CB-9604 Fix error adding browser platform with PlatformApi polyfill.
+* CB-9597 Initial Implementation of PlatformApiPoly
+* CB-9354 Fix array merging with complex items
+* CB-9556 Don't uninstall dependent plugin if it was installed as a top-level after
+
 ### 5.3.2 (Sep 17, 2015)
 * CB-9297 Parse xcode project syncronously to avoid issues with node v4
 
