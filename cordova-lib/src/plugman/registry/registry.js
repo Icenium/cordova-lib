@@ -22,6 +22,8 @@
 var npm = require('npm'),
     path = require('path'),
     Q = require('q'),
+    fs = require('fs'),
+    crypto = require('crypto'),
     npmhelper = require('../../util/npm-helper'),
     events = require('cordova-common').events,
     unpack = require('../../util/unpack');
@@ -125,10 +127,28 @@ function fetchPlugin(plugin) {
         events.emit('log', 'Fetching plugin "' + plugin + '" via npm');
         return Q.ninvoke(npm.commands, 'cache', ['add', plugin])
         .then(function (info) {
-            var pluginDir = path.resolve(npm.cache, info.name, info.version, 'package');
+            var package_tgz = path.resolve(npm.cache, info.name, info.version, 'package.tgz'),
+                fd = fs.createReadStream(package_tgz),
+                hash = crypto.createHash('sha1');
+
+            hash.setEncoding('hex');
+            return Q.Promise(function(resolve, reject) {
+                fd.on('end', function() {
+                    hash.end();
+                    resolve({
+                        package_tgz: package_tgz,
+                        pluginDir: path.resolve(npm.cache, info.name, info.version, hash.read().substr(0, 10))
+                    });
+                });
+
+                fd.pipe(hash);
+            });
+        })
+        .then(function (pluginInfo) {
             // Unpack the plugin that was added to the cache (CB-8154)
-            var package_tgz = path.resolve(npm.cache, info.name, info.version, 'package.tgz');
-            return unpack.unpackTgz(package_tgz, pluginDir);
+            // Unpack the plugin in a directory named after the SHA1 string of the .tgz file that the plugin originates from
+            // that way if the plugin was already extracted once it can be reused instead of extracting it each time
+            return fs.existsSync(pluginInfo.pluginDir) ? pluginInfo.pluginDir : unpack.unpackTgz(pluginInfo.package_tgz, pluginInfo.pluginDir);
         });
     });
 }
