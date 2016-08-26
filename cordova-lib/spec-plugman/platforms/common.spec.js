@@ -102,6 +102,24 @@ describe('common platform handler', function() {
             shell.rm('-rf', project_dir);
         });
 
+        it('should deeply symlink directory tree when src is a directory', function(){
+            var symlink_dir_relative_subdir = path.dirname(symlink_dir_relative_file);
+
+            shell.mkdir('-p', path.join(symlink_dir, symlink_dir_relative_subdir));
+            fs.writeFileSync(path.join(symlink_dir, symlink_dir_relative_file), 'contents', 'utf-8');
+
+            // This will fail on windows if not admin - ignore the error in that case.
+            if (ignoreEPERMonWin32(java_file, symlink_file)) {
+                return;
+            }
+
+            var create_symlink = true;
+            common.copyFile(test_dir, symlink_dir, project_dir, dest, create_symlink);
+
+            expect(path.resolve(dest, symlink_dir_relative_subdir, fs.readlinkSync(path.join(dest, symlink_dir_relative_file)))).toBe(path.resolve(symlink_dir, symlink_dir_relative_file));
+            shell.rm('-rf', project_dir);
+        });
+
         it('should throw if symlink is linked to a file outside the plugin', function(){
             shell.mkdir('-p', java_dir);
             fs.writeFileSync(non_plugin_file, 'contents', 'utf-8');
