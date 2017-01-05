@@ -39,8 +39,7 @@ var dummyPluginInfo = new PluginInfo(dummyplugin);
 var androidonlyPluginInfo = new PluginInfo(androidonlyplugin);
 var dummy_id = dummyPluginInfo.id;
 var valid_source = dummyPluginInfo.getSourceFiles('android'),
-    valid_resources = dummyPluginInfo.getResourceFiles('android'),
-    valid_libs = androidonlyPluginInfo.getLibFiles('android');
+    valid_resources = dummyPluginInfo.getResourceFiles('android');
 
 var faultyPluginInfo = new PluginInfo(faultyplugin);
 var invalid_source = faultyPluginInfo.getSourceFiles('android');
@@ -68,40 +67,6 @@ describe('android project handler', function() {
     describe('installation', function() {
         beforeEach(function() {
             shell.mkdir('-p', temp);
-        });
-        describe('of <lib-file> elements', function() {
-            it('should copy jar files to project/libs', function () {
-                var s = spyOn(common, 'copyFile');
-
-                android['lib-file'].install(valid_libs[0], dummyplugin, temp);
-                expect(s).toHaveBeenCalledWith(dummyplugin, 'src/android/TestLib.jar', temp, path.join('libs', 'TestLib.jar'), false);
-            });
-        });
-        describe('of <lib-file> elements with custom=false', function() {
-            it('should copy jar files from sdk directory to project/libs', function () {
-                var s = spyOn(common, 'copyFile');
-                var localProjectPropsFile = path.resolve(temp, 'local.properties');
-                var sdkDir = path.join(temp, '..', 'SDK').replace(/\\/g, '/');
-                fs.writeFileSync(localProjectPropsFile, 'sdk.dir=' + sdkDir);
-
-                android['lib-file'].install(valid_libs[1], androidonlyplugin, temp, androidonlyPluginInfo.id);
-                expect(s).toHaveBeenCalledWith(sdkDir, 'extras/android/support/v4/android-support-v4.jar', temp, path.join('libs', 'android-support-v4.jar'), false);
-            });
-        });
-        describe('of <lib-file> elements with parent', function() {
-            it('should copy jar files to sub-project/libs', function () {
-                shell.cp('-rf', android_one_project, temp);
-                var s = spyOn(common, 'copyFile');
-                var localProjectPropsFile = path.resolve(temp, 'local.properties');
-                var sdkDir = path.join(temp, '..', 'SDK').replace(/\\/g, '/');
-                fs.writeFileSync(localProjectPropsFile, 'sdk.dir=' + sdkDir);
-
-                android['lib-file'].install(valid_libs[2], androidonlyplugin, temp, androidonlyPluginInfo.id);
-                expect(s).toHaveBeenCalledWith(
-                    sdkDir, 'extras/android/support/v4/android-support-v4.jar',
-                    path.resolve(temp, androidonlyPluginInfo.id, 'childapp-plugin-lib'),
-                    path.join('libs', 'android-support-v4.jar'), false);
-            });
         });
         describe('of <resource-file> elements', function() {
             it('should copy files', function () {
@@ -282,7 +247,7 @@ describe('android project handler', function() {
             var exec = spyOn(shell, 'exec');
 
             android['framework'].install(frameworkElement, dummyplugin, temp, dummy_id, { platformVersion: '3.0.0' });
-            fs.writeFileSync(path.join(parentDir, 'local.properties'), 'sdk.dir=' + path.join(temp, '..', 'SDK').replace(/\\/g, '/'));
+            fs.writeFileSync(path.join(temp, 'local.properties'), 'sdk.dir=' + path.join(temp, '..', 'SDK').replace(/\\/g, '/'));
             android['framework'].install(frameworkElementChild, dummyplugin, temp, dummy_id, { platformVersion: '3.0.0' });
 
             android.parseProjectFile(temp).write();
@@ -315,14 +280,6 @@ describe('android project handler', function() {
             shell.mkdir('-p', temp);
             shell.mkdir('-p', plugins_dir);
             shell.cp('-rf', android_two_project, temp);
-        });
-        describe('of <lib-file> elements', function(done) {
-            it('should remove jar files', function () {
-                var s = spyOn(common, 'removeFile');
-                android['lib-file'].install(valid_libs[0], dummyplugin, temp);
-                android['lib-file'].uninstall(valid_libs[0], temp, dummy_id);
-                expect(s).toHaveBeenCalledWith(temp, path.join('libs', 'TestLib.jar'));
-            });
         });
         describe('of <resource-file> elements', function(done) {
             it('should remove files', function () {
