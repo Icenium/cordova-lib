@@ -27,6 +27,7 @@ var install = require('../src/plugman/install'),
     events = require('cordova-common').events,
     plugman = require('../src/plugman/plugman'),
     platforms = require('../src/plugman/platforms/common'),
+    HooksRunner = require('../src/hooks/HooksRunner'),
     knownPlatforms  = require('../src/platforms/platforms'),
     common  = require('./common'),
     fs      = require('fs'),
@@ -50,6 +51,7 @@ var install = require('../src/plugman/install'),
         'org.test.plugins.childbrowser' : path.join(plugins_dir, 'org.test.plugins.childbrowser'),
         'com.adobe.vars' : path.join(plugins_dir, 'com.adobe.vars'),
         'org.test.defaultvariables' : path.join(plugins_dir, 'org.test.defaultvariables'),
+        'org.test.plugin-with-hooks' : path.join(plugins_dir, 'org.test.plugin-with-hooks'),
         'org.test.invalid.engine.script' : path.join(plugins_dir, 'org.test.invalid.engine.script'),
         'org.test.invalid.engine.no.platform' : path.join(plugins_dir, 'org.test.invalid.engine.no.platform'),
         'org.test.invalid.engine.no.scriptSrc' : path.join(plugins_dir, 'org.test.invalid.engine.no.scriptSrc'),
@@ -173,7 +175,7 @@ describe('plugman install start', function() {
 });
 
 describe('install', function() {
-    var chmod, exec, add_to_queue, cp, rm, fetchSpy;
+    var chmod, exec, add_to_queue, cp, rm, fetchSpy, fire;
     var spawnSpy;
 
     beforeEach(function() {
@@ -192,10 +194,27 @@ describe('install', function() {
         cp = spyOn(shell, 'cp').and.returnValue(true);
         rm = spyOn(shell, 'rm').and.returnValue(true);
         add_to_queue = spyOn(PlatformJson.prototype, 'addInstalledPluginToPrepareQueue');
+        fire = spyOn(HooksRunner.prototype, 'fire').and.returnValue(Q());
         done = false;
     });
 
     describe('success', function() {
+        it('should fire hooks on plugin successful install', function(done) {
+           return install('android', project, plugins['org.test.plugin-with-hooks'])
+           .then(function(result) {
+               expect(fire).toHaveBeenCalled();
+               done();
+           });
+        });
+
+        it('should not fire hooks on plugin successful install when run_hooks=false', function() {
+           return install('android', project, plugins['org.test.plugin-with-hooks'], {run_hooks:false})
+           .then(function(result) {
+               expect(fire).not.toHaveBeenCalled();
+               done();
+           });
+        });
+
         it('Test 002 : should emit a results event with platform-agnostic <info>', function() {
             // org.test.plugins.childbrowser
             expect(results['emit_results'][0]).toBe('No matter what platform you are installing to, this notice is very important.');
@@ -351,7 +370,7 @@ describe('install', function() {
                     ]);
                     done();
                 });
-                
+
             });
 
             it('Test 016 : should install any dependent plugins from registry when url is not defined', function(done) {
@@ -366,7 +385,7 @@ describe('install', function() {
                     ]);
                     done();
                 });
-                
+
             });
 
             it('Test 017 : should process all dependent plugins with alternate routes to the same plugin', function(done) {

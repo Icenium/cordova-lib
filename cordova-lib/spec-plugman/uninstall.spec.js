@@ -25,6 +25,7 @@ var uninstall = require('../src/plugman/uninstall'),
     PluginInfo = require('cordova-common').PluginInfo,
     events = require('cordova-common').events,
     plugman = require('../src/plugman/plugman'),
+    HooksRunner = require('../src/hooks/HooksRunner'),
     common  = require('./common'),
     platforms = require('../src/platforms/platforms'),
     xmlHelpers = require('cordova-common').xmlHelpers,
@@ -47,6 +48,7 @@ var uninstall = require('../src/plugman/uninstall'),
 
     plugins = {
         'org.test.plugins.dummyplugin' : path.join(plugins_dir, 'org.test.plugins.dummyplugin'),
+        'org.test.plugin-with-hooks' : path.join(plugins_dir, 'org.test.plugin-with-hooks'),
         'A' : path.join(plugins_dir, 'dependencies', 'A'),
         'C' : path.join(plugins_dir, 'dependencies', 'C')
     },
@@ -87,6 +89,8 @@ describe('plugman uninstall start', function() {
 
         return install('android', project, plugins['org.test.plugins.dummyplugin'])
         .then(function(result){
+            return install('android', project, plugins['org.test.plugin-with-hooks']);
+        }).then(function(result){
             return install('android', project, plugins['A']);
         }).then( function(){
             return install('android', project2, plugins['C']);
@@ -138,6 +142,11 @@ describe('uninstallPlatform', function() {
             spyOn(platforms, 'getPlatformApi').and.returnValue(platformApi);
 
             var existsSyncOrig = fs.existsSync;
+            var statSyncOrig = fs.statSync;
+            spyOn(fs, 'statSync').and.callFake(function (file) {
+                if (path.basename(file) === 'config.xml') return true;
+                return statSyncOrig.call(fs, file);
+            });
             spyOn(fs, 'existsSync').and.callFake(function (file) {
                 if (file.indexOf(dummy_id) >= 0) return true;
                 return existsSyncOrig.call(fs, file);
@@ -244,7 +253,7 @@ describe('uninstallPlugin', function() {
         }, 6000);
 
         it('Test 008 : allow forcefully removing a plugin', function(done) {
-            uninstall.uninstallPlugin('C', plugins_install_dir, {force: true}) 
+            uninstall.uninstallPlugin('C', plugins_install_dir, {force: true})
             .then(function() {
                 var del = common.spy.getDeleted(emit);
                 expect(del).toEqual(['Deleted "C"']);
@@ -279,14 +288,31 @@ describe('uninstallPlugin', function() {
 });
 
 describe('uninstall', function() {
-    var fsWrite, rm;
+    var fsWrite, rm, fire;
 
     beforeEach(function() {
         fsWrite = spyOn(fs, 'writeFileSync').and.returnValue(true);
         rm = spyOn(shell, 'rm').and.returnValue(true);
+        fire = spyOn(HooksRunner.prototype, 'fire').and.returnValue(Q());
         done = false;
     });
-    
+    describe('success', function() {
+        it('should fire hooks on plugin successful uninstalled', function(done) {
+           return uninstall('android', project, plugins['org.test.plugin-with-hooks'])
+           .then(function(result) {
+               expect(fire).toHaveBeenCalled();
+               done();
+           });
+        });
+
+        it('should call the config-changes module\'s add_uninstalled_plugin_to_prepare_queue method after processing an install', function(done) {
+            return uninstall('android', project, plugins['org.test.plugins.dummyplugin'])
+            .then(function(result) {
+                done();
+            });
+        });
+    });
+
     describe('failure', function() {
         it('Test 011 : should throw if platform is unrecognized', function(done) {
             return uninstall('atari', project, 'SomePlugin')

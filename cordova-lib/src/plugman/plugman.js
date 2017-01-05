@@ -109,7 +109,8 @@ plugman.commands =  {
             www_dir: cli_opts.www,
             searchpath: cli_opts.searchpath,
             link: cli_opts.link,
-            projectRoot: cli_opts.project
+            projectRoot: cli_opts.project,
+            run_hooks: !cli_opts.nohooks
         };
         var p = Q();
         cli_opts.plugin.forEach(function (pluginSrc) {
@@ -135,7 +136,8 @@ plugman.commands =  {
                 www_dir: cli_opts.www,
                 save: cli_opts.save || false,
                 fetch: cli_opts.fetch || false,
-                projectRoot: cli_opts.project
+                projectRoot: cli_opts.project,
+                run_hooks: !cli_opts.nohooks
             };
             p = p.then(function () {
                 return plugman.raw.uninstall(cli_opts.platform, cli_opts.project, pluginSrc, cli_opts.plugins_dir, opts);

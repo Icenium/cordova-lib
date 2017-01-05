@@ -129,7 +129,7 @@ describe('fetch', function() {
                     done();
             });
         }, 6000);
-        
+
         it('Test 009 : should call clonePluginGitRepo with subdir if applicable', function(done) {
             var url = 'https://github.com/bobeast/GAPlugin.git';
             var dir = 'fakeSubDir';

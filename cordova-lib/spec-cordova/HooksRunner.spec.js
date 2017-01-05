@@ -81,11 +81,6 @@ describe('HooksRunner', function() {
         process.chdir(path.join(__dirname, '..'));  // Non e2e tests assume CWD is repo root.
     });
 
-    it('Test 001 : should throw if provided directory is not a cordova project', function() {
-        expect(function() {
-            new HooksRunner(tmpDir);
-        }).toThrow();
-    });
 
     it('Test 002 : should not throw if provided directory is a cordova project', function() {
         expect(function () {
@@ -115,7 +110,6 @@ describe('HooksRunner', function() {
             }
             return Q();
         });
-
 
         // Add the testing platform.
         cordova.raw.platform('add', [helpers.testPlatform]).fail(function (err) {
