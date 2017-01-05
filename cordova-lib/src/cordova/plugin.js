@@ -34,7 +34,7 @@ var cordova_util  = require('./util'),
     metadata      = require('../plugman/util/metadata'),
     registry      = require('../plugman/registry/registry'),
     chainMap      = require('../util/promise-util').Q_chainmap,
-    pkgJson       = require('../../package.json'),
+    pkgJson       = require('../../../package.json'),
     opener        = require('opener');
 
 // For upper bounds in cordovaDependencies

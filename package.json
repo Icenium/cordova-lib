@@ -12,7 +12,7 @@
     "url": "https://issues.apache.org/jira/browse/CB",
     "email": "dev@cordova.apache.org"
   },
-  "main": "cordova-lib.js",
+  "main": "cordova-lib/cordova-lib.js",
   "engines": {
     "node": ">=0.9.9"
   },
@@ -55,10 +55,10 @@
     "test": "npm run jshint && npm run jasmine",
     "test-ios": "npm run test && npm run jasmine-ios",
     "ci": "npm run jshint && npm run cover && codecov",
-    "jshint": "jshint src spec-cordova spec-plugman",
-    "jasmine": "jasmine-node --captureExceptions --color spec-plugman spec-cordova",
-    "jasmine-ios": "jasmine-node --captureExceptions --color spec-cordova/platform.spec.ios.js --matchall",
-    "cover": "istanbul cover --root src --print detail node_modules/jasmine-node/bin/jasmine-node -- spec-cordova spec-plugman"
+    "jshint": "cd cordova-lib && jshint src spec-cordova spec-plugman",
+    "jasmine": "cd cordova-lib && jasmine-node --captureExceptions --color spec-plugman spec-cordova",
+    "jasmine-ios": "cd cordova-lib && jasmine-node --captureExceptions --color spec-cordova/platform.spec.ios.js --matchall",
+    "cover": "cd cordova-lib && istanbul cover --root src --print detail ../node_modules/jasmine-node/bin/jasmine-node -- spec-cordova spec-plugman"
   },
   "contributors": [
     {
