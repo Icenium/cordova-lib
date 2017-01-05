@@ -425,7 +425,7 @@ describe('HooksRunner', function() {
 
                         var pluginInfo = new PluginInfo(testPluginInstalledPath);
 
-                        var cordovaVersion = require('../package').version;
+                        var cordovaVersion = require('../../package').version;
 
                         var androidPluginOpts = {
                             cordova: {

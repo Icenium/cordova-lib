@@ -12,19 +12,19 @@
     "url": "https://issues.apache.org/jira/browse/CB",
     "email": "dev@cordova.apache.org"
   },
-  "main": "cordova-lib.js",
+  "main": "cordova-lib/cordova-lib.js",
   "engines": {
     "node": ">=0.9.9"
   },
   "engineStrict": true,
   "dependencies": {
     "aliasify": "^1.7.2",
-    "cordova-common": "1.5.x",
-    "cordova-fetch": "^1.0.1",
+    "cordova-common": "file:./cordova-common",
+    "cordova-fetch": "file:./cordova-fetch",
     "cordova-create": "^1.0.1",
     "cordova-js": "4.2.0",
     "cordova-registry-mapper": "1.x",
-    "cordova-serve": "^1.0.0",
+    "cordova-serve": "file:./cordova-serve",
     "dep-graph": "1.1.0",
     "elementtree": "0.1.6",
     "glob": "^5.0.3",
@@ -55,10 +55,10 @@
     "test": "npm run jshint && npm run jasmine",
     "test-ios": "npm run test && npm run jasmine-ios",
     "ci": "npm run jshint && npm run cover && codecov",
-    "jshint": "jshint src spec-cordova spec-plugman",
-    "jasmine": "jasmine-node --captureExceptions --color spec-plugman spec-cordova",
-    "jasmine-ios": "jasmine-node --captureExceptions --color spec-cordova/platform.spec.ios.js --matchall",
-    "cover": "istanbul cover --root src --print detail node_modules/jasmine-node/bin/jasmine-node -- spec-cordova spec-plugman"
+    "jshint": "jshint cordova-lib/src cordova-lib/spec-cordova cordova-lib/spec-plugman",
+    "jasmine": "jasmine-node --captureExceptions --color cordova-lib/spec-plugman cordova-lib/spec-cordova",
+    "jasmine-ios": "jasmine-node --captureExceptions --color cordova-lib/spec-cordova/platform.spec.ios.js --matchall",
+    "cover": "istanbul cover --root cordova-lib/src --print detail node_modules/jasmine-node/bin/jasmine-node -- cordova-lib/spec-cordova cordova-lib/spec-plugman"
   },
   "contributors": [
     {
