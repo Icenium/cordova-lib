@@ -311,6 +311,7 @@ describe('uninstall', function() {
                 done();
             });
         });
+        
     });
 
     describe('failure', function() {

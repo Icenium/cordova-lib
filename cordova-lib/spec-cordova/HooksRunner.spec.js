@@ -449,8 +449,9 @@ describe('HooksRunner', function() {
                                 call.args[0] == 'after_plugin_install') {
                                 if(call.args[1] && call.args[1].plugin) {
                                     if(call.args[1].plugin.platform == 'android') {
-                                        expect(JSON.stringify(androidPluginOpts) ===
-                                            JSON.stringify(call.args[1])).toBe(true);
+                                        delete call.args[1].cordova.project;
+                                        expect(JSON.stringify(androidPluginOpts)).toEqual(
+                                            JSON.stringify(call.args[1]));
                                     }
                                 }
                             }
