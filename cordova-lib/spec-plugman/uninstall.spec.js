@@ -24,7 +24,7 @@ var uninstall = require('../src/plugman/uninstall'),
     actions = require('cordova-common').ActionStack,
     PluginInfo = require('cordova-common').PluginInfo,
     events = require('cordova-common').events,
-    plugman = require('../src/plugman/plugman'),
+    HooksRunner = require('../src/hooks/HooksRunner'),
     common  = require('./common'),
     platforms = require('../src/platforms/platforms'),
     xmlHelpers = require('cordova-common').xmlHelpers,
@@ -47,6 +47,7 @@ var uninstall = require('../src/plugman/uninstall'),
 
     plugins = {
         'org.test.plugins.dummyplugin' : path.join(plugins_dir, 'org.test.plugins.dummyplugin'),
+        'org.test.plugin-with-hooks' : path.join(plugins_dir, 'org.test.plugin-with-hooks'),
         'A' : path.join(plugins_dir, 'dependencies', 'A'),
         'C' : path.join(plugins_dir, 'dependencies', 'C')
     },
@@ -95,6 +96,8 @@ describe('plugman uninstall start', function() {
         .then(function(){
             return install('android', project, plugins['org.test.plugins.dummyplugin']);
         }).then(function(){
+            return install('android', project, plugins['org.test.plugin-with-hooks']);
+        }).then(function(){
             return install('android', project, plugins['A']);
         }).then( function(){
             return install('android', project2, plugins['C']);
@@ -140,13 +143,18 @@ describe('uninstallPlatform', function() {
             }, function(err) {
                 expect(err).toBeUndefined();
             }).fin(done);
-        });
+            });
 
         it('should return propagate value returned by PlatformApi removePlugin method', function(done) {
             var platformApi = { removePlugin: jasmine.createSpy('removePlugin') };
             spyOn(platforms, 'getPlatformApi').andReturn(platformApi);
 
             var existsSyncOrig = fs.existsSync;
+            var statSyncOrig = fs.statSync;
+            spyOn(fs, 'statSync').andCallFake(function (file) {
+                if (path.basename(file) === 'config.xml') return true;
+                return statSyncOrig.call(fs, file);
+            });
             spyOn(fs, 'existsSync').andCallFake(function (file) {
                 if (file.indexOf(dummy_id) >= 0) return true;
                 return existsSyncOrig.call(fs, file);
@@ -166,7 +174,7 @@ describe('uninstallPlatform', function() {
                         expect(!!result).toEqual(expectedResult);
                     }, function(err) {
                         expect(err).toBeUndefined();
-                    });
+        });
                 }, Q());
             }
 
@@ -175,7 +183,7 @@ describe('uninstallPlatform', function() {
                 return validateReturnedResultFor([ false, null, undefined, '' ], false);
             })
             .fin(done);
-        });
+            });
 
         describe('with dependencies', function() {
             var emit;
@@ -284,7 +292,7 @@ describe('uninstallPlugin', function() {
         it('should not remove dependent plugin if it was installed after as top-level', function() {
             runs(function() {
                 uninstallPromise( uninstall.uninstallPlugin('A', plugins_install_dir3) );
-            });
+    });
             waitsFor(function() { return done; }, 'promise never resolved', 200);
             runs(function() {
                 var del = common.spy.getDeleted(emit);
@@ -293,18 +301,38 @@ describe('uninstallPlugin', function() {
                     'Deleted "D"',
                     'Deleted "A"'
                 ]);
-            });
+});
         });
     });
 });
 
 describe('uninstall', function() {
-    var fsWrite, rm;
+    var fsWrite, rm, fire;
 
     beforeEach(function() {
         fsWrite = spyOn(fs, 'writeFileSync').andReturn(true);
         rm = spyOn(shell, 'rm').andReturn(true);
+        fire = spyOn(HooksRunner.prototype, 'fire').andReturn(Q());
+
         done = false;
+    });
+    describe('success', function() {
+        it('should fire hooks on plugin successful uninstalled', function() {
+           runs(function() {
+               uninstallPromise( uninstall('android', project, plugins['org.test.plugin-with-hooks']) );
+           });
+           waitsFor(function() { return done; }, 'promise never resolved', 200);
+           runs(function() {
+               expect(fire).toHaveBeenCalled();
+           });
+        });
+
+        it('should call the config-changes module\'s add_uninstalled_plugin_to_prepare_queue method after processing an install', function() {
+            runs(function() {
+                uninstallPromise( uninstall('android', project, plugins['org.test.plugins.dummyplugin']) );
+            });
+            waitsFor(function() { return done; }, 'promise never resolved', 200);
+        });
     });
 
     describe('failure', function() {
@@ -331,26 +359,6 @@ describe('uninstall', function() {
 
 describe('end', function() {
     it('end', function() {
-        done = false;
-
-        promise.then(function(){
-            return uninstall('android', project, plugins['org.test.plugins.dummyplugin']);
-        }).then(function(){
-            // Fails... A depends on
-            return uninstall('android', project, plugins['C']);
-        }).fail(function(err) {
-            expect(err.stack).toMatch(/The plugin 'C' is required by \(A\), skipping uninstallation./);
-        }).then(function(){
-            // dependencies on C,D ... should this only work with --recursive? prompt user..?
-            return uninstall('android', project, plugins['A']);
-        }).fin(function(err){
-            if(err)
-                plugman.emit('error', err);
-
-            shell.rm('-rf', project, project2, project3);
-            done = true;
-        });
-
-        waitsFor(function() { return done; }, 'promise never resolved', 500);
+        shell.rm('-rf', project, project2, project3);
     });
 });
