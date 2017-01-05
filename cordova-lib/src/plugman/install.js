@@ -241,11 +241,11 @@ function getEngines(pluginInfo, platform, project_dir, plugin_dir){
     var cordovaEngineIndex, cordovaPlatformEngineIndex, theName, platformIndex, defaultPlatformIndex;
     // load in known defaults and update when necessary
 
-    engines.forEach(function(engine) {
+    engines.forEach(function(engine){
         theName = engine.name;
 
         // check to see if the engine is listed as a default engine
-        if (defaultEngines[theName]) {
+        if(defaultEngines[theName]){
             // make sure engine is for platform we are installing on
             defaultPlatformIndex = defaultEngines[theName].platform.indexOf(platform);
             if(defaultPlatformIndex > -1 || defaultEngines[theName].platform === '*'){
@@ -261,7 +261,7 @@ function getEngines(pluginInfo, platform, project_dir, plugin_dir){
                 uncheckedEngines.push(defaultEngines[theName]);
             }
         // check for other engines
-        } else {
+        }else{
             if (typeof engine.platform === 'undefined' || typeof engine.scriptSrc === 'undefined') {
                 throw new CordovaError('warn', 'engine.platform or engine.scriptSrc is not defined in custom engine "' +
                     theName + '" from plugin "' + pluginInfo.id + '" for ' + platform);
@@ -273,7 +273,7 @@ function getEngines(pluginInfo, platform, project_dir, plugin_dir){
             if (scriptSrcPath.indexOf(plugin_dir) !== 0) {
                 throw new Error('Security violation: scriptSrc ' + scriptSrcPath + ' is out of plugin dir ' + plugin_dir);
             }
-            if (platformIndex > -1 || engine.platform === '*') {
+            if(platformIndex > -1 || engine.platform === '*'){
                 uncheckedEngines.push({ 'name': theName, 'platform': engine.platform, 'scriptSrc':scriptSrcPath, 'minVersion' :  engine.version});
             }
         }
@@ -374,16 +374,15 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
         }
     ).then(
         function(){
-            var install_plugin_dir = path.join(plugins_dir, pluginInfo.id);
+            var install_plugin_dir = path.join(plugins_dir, pluginInfo.id),
+            run_hooks = options.hasOwnProperty('run_hooks') ? options.run_hooks : true;
 
             // may need to copy to destination...
             if ( !fs.existsSync(install_plugin_dir) ) {
                 copyPlugin(plugin_dir, plugins_dir, options.link, pluginInfoProvider);
             }
 
-            var projectRoot = cordovaUtil.isCordova();
-
-            if(projectRoot) {
+            if(run_hooks) {
                 // using unified hooksRunner
                 var hookOptions = {
                     cordova: { platforms: [ platform ] },
@@ -401,7 +400,7 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
                 // into platform_www but plugman CLI doesn't allow us to do that, so we set it here
                 options.usePlatformWww = true;
 
-                var hooksRunner = new HooksRunner(projectRoot);
+                var hooksRunner = new HooksRunner(cordovaUtil.isCordova() || project_dir);
 
                 return hooksRunner.fire('before_plugin_install', hookOptions).then(function() {
                     return handleInstall(actions, pluginInfo, platform, project_dir, plugins_dir, install_plugin_dir, filtered_variables, options);
@@ -416,7 +415,7 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
         }
     ).fail(
         function (error) {
-
+            
             if(error === 'skip') {
                 events.emit('warn', 'Skipping \'' + pluginInfo.id + '\' for ' + platform);
             } else {
