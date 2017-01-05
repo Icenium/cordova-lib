@@ -117,7 +117,7 @@ module.exports.uninstallPlugin = function(id, plugins_dir, options) {
     }
 
     /*
-     * Deletes plugin from plugins directory and 
+     * Deletes plugin from plugins directory and
      * node_modules directory if --fetch was supplied.
      *
      * @param {String} id   the id of the plugin being removed
@@ -133,12 +133,12 @@ module.exports.uninstallPlugin = function(id, plugins_dir, options) {
 
         shell.rm('-rf', plugin_dir);
         events.emit('verbose', 'Deleted "'+ id +'"');
-        
+
         if(options.fetch) {
             //remove plugin from node_modules directory
-            return npmUninstall(id, options.projectRoot, options); 
+            return npmUninstall(id, options.projectRoot, options);
         }
-        
+
         return Q();
 
     };
@@ -250,7 +250,7 @@ module.exports.uninstallPlugin = function(id, plugins_dir, options) {
 function runUninstallPlatform(actions, platform, project_dir, plugin_dir, plugins_dir, options) {
     var pluginInfoProvider = options.pluginInfoProvider,
         run_hooks = options.hasOwnProperty('run_hooks') ? options.run_hooks : true;
-        
+
     // If this plugin is not really installed, return (CB-7004).
     if (!fs.existsSync(plugin_dir)) {
         return Q(true);
@@ -309,10 +309,14 @@ function runUninstallPlatform(actions, platform, project_dir, plugin_dir, plugin
     }
 
    if(run_hooks) {
+        var platform_project =  platform_modules.getPlatformApi(platform, project_dir);
 
         // using unified hooksRunner
         var hooksRunnerOptions = {
-            cordova: { platforms: [ platform ] },
+            cordova: {
+                platforms: [ platform ],
+                project: platform_project
+            },
             plugin: {
                 id: pluginInfo.id,
                 pluginInfo: pluginInfo,
