@@ -83,7 +83,7 @@ HooksRunner.prototype.prepareOptions = function(opts) {
     opts.cordova.plugins = opts.cordova.plugins || opts.plugins || cordovaUtil.findPlugins(path.join(opts.projectRoot, 'plugins'));
 
     try {
-        opts.cordova.version = opts.cordova.version || require('../../package').version;
+        opts.cordova.version = opts.cordova.version || require('../../../package').version;
     } catch(ex) {
         events.emit('warn', 'HooksRunner could not load package.json: ' + ex.message);
     }
@@ -215,7 +215,7 @@ function runScriptViaChildProcessSpawn(script, context) {
 
     var execOpts = {cwd: opts.projectRoot, printCommand: true, stdio: 'inherit'};
     execOpts.env = {};
-    execOpts.env.CORDOVA_VERSION = require('../../package').version;
+    execOpts.env.CORDOVA_VERSION = require('../../../package').version;
     execOpts.env.CORDOVA_PLATFORMS = opts.platforms ? opts.platforms.join() : '';
     execOpts.env.CORDOVA_PLUGINS = opts.plugins ? opts.plugins.join() : '';
     execOpts.env.CORDOVA_HOOK = script.fullPath;

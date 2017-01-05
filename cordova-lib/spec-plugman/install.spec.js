@@ -274,7 +274,7 @@ describe('install', function() {
                 });
             });
             it('Test 010 : should check platform sdk version if specified', function(done) {
-                var cordovaVersion = require('../package.json').version.replace(/-dev|-nightly.*$/, '');
+                var cordovaVersion = require('../../package.json').version.replace(/-dev|-nightly.*$/, '');
                 exec.and.callFake(function(cmd, cb) { cb(null, '18\n'); });
                 install('android', project, plugins['com.cordova.engine-android'])
                 .fail(fail)
@@ -293,8 +293,8 @@ describe('install', function() {
                 install('android', project, plugins['com.cordova.engine'])
                 .fail(fail)
                 .fin(function() {
-                    var plugmanVersion = require('../package.json').version.replace(/-dev|-nightly.*$/, '');
-                    var cordovaVersion = require('../package.json').version.replace(/-dev|-nightly.*$/, '');
+                    var plugmanVersion = require('../../package.json').version.replace(/-dev|-nightly.*$/, '');
+                    var cordovaVersion = require('../../package.json').version.replace(/-dev|-nightly.*$/, '');
                     expect(satisfies.calls.count()).toBe(4);
                     // <engine name="cordova" version=">=2.3.0"/>
                     expect(satisfies.calls.argsFor(0)).toEqual([ cordovaVersion, '>=2.3.0', true ]);
