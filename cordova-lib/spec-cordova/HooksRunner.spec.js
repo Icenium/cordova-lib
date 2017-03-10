@@ -425,7 +425,7 @@ describe('HooksRunner', function() {
                         var androidPluginOpts = {
                             cordova: {
                                 platforms: [ 'android' ],
-                                project: platform_modules.getPlatformApi('android', path.join(projectRoot, 'platforms/android/'))._handler, 
+                                project: require(`../src/plugman/platforms/android`),
                                 plugins: ['com.plugin.withhooks'],
                                 version: cordovaVersion
                             },

@@ -383,7 +383,7 @@ function runInstall(actions, platform, project_dir, plugin_dir, plugins_dir, opt
             }
 
             if(run_hooks) {
-                var platform_project =  platform_modules.getPlatformApi(platform, project_dir);
+                var platform_project =  require(`./platforms/${platform}`);
 
                 // using unified hooksRunner
                 var hookOptions = {
