@@ -309,7 +309,10 @@ function runUninstallPlatform(actions, platform, project_dir, plugin_dir, plugin
     }
 
    if(run_hooks) {
-        var platform_project =  require(`./platforms/${platform}`);
+        var platform_project = platform_modules.getPlatformApi(platform, project_dir) ||
+                require(`./platforms/${platform}`);
+
+        platform_project = platform_project._handler || platform_project;
 
         // using unified hooksRunner
         var hooksRunnerOptions = {
